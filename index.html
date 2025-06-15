@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+    <title>Flash Cards - Ignyos</title>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="./Favicon.png" type="image/x-icon" />
+
+        <link async rel="stylesheet" href="./site.css">
+        <script src="./scripts/helpers.js"></script>
+        <script src="./scripts/dataModels.js"></script>
+        <script src="./scripts/app.js"></script>
+        <script src="./scripts/indexedDb.js"></script>
+        <script src="./scripts/state.js"></script>
+
+        <!-- <script src="./scripts/seedData.js"></script> -->
+    </head>
+    <body>
+    </body>
+    <script>
+        let stateMgr, app, page
+        window.onload = async () => {
+            await ensureDbReady()
+            stateMgr = new StateManager()
+            app = new App()
+
+            // await addSeedData()
+        }
+    </script>
+</html>

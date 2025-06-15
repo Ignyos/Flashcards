@@ -1,0 +1,33 @@
+body {
+    background-color: rgb(30,35,40);
+    display: grid;
+    grid-template-rows: 48px 1fr;
+    grid-template-columns: auto;
+    grid-template-areas: "site-header" "page";
+    height: 100%;
+    color: #ddd;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#page {
+   background-color: rgb(30,35,40);
+   color: rgb(206, 206, 206);
+   padding: 24px;
+   font-size: xx-large;
+   text-align: center;
+}
+
+.get-started {
+    cursor: pointer;
+    color: #758ca3;
+    font-size: .8em;
+    border: .1rem solid rgb(110, 161, 213);
+    border-radius: .2em;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 5px 10px;
+}
