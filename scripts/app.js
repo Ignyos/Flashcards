@@ -9,6 +9,14 @@ class App {
       await stateMgr.loadSite()
       await this.initSiteHeader()
       await this.loadPage()
+      await this.sendActivityLog()
+   }F
+
+   async sendActivityLog()
+   {
+      let id = stateMgr.account?.id ?? 'null'
+      let page = stateMgr.account?.state?.currentPage ?? 'null'
+      await api.postAppLog(`${id} ~|~ ${page}`)
    }
 
    async initSiteHeader() {
@@ -435,7 +443,7 @@ class SiteHeader {
       title.innerText = "Enter your name."
       ele.appendChild(title)
       let msg = document.createElement('p')
-      msg.innerText = "We do not collect any personal information.\n\nAll data is stored locally on your device."
+      msg.innerText = "We do not collect any personal information."
       msg.style.maxWidth = '21em'
       msg.style.margin = '1em auto'
       ele.appendChild(msg)

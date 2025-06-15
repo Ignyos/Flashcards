@@ -10,7 +10,7 @@ const stores = {
 }
 
 let db;
-const request = indexedDB.open("ignyos.funtility", 1);
+const request = indexedDB.open("ignyos.flashcards", 1);
 
 request.onupgradeneeded = function(event) {
    db = event.target.result;

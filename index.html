@@ -9,6 +9,7 @@
         <link async rel="stylesheet" href="./site.css">
         <script src="./scripts/helpers.js"></script>
         <script src="./scripts/dataModels.js"></script>
+        <script src="./scripts/api.js"></script>
         <script src="./scripts/app.js"></script>
         <script src="./scripts/indexedDb.js"></script>
         <script src="./scripts/state.js"></script>
@@ -18,12 +19,12 @@
     <body>
     </body>
     <script>
-        let stateMgr, app, page
+        let stateMgr, app, page, api
         window.onload = async () => {
             await ensureDbReady()
             stateMgr = new StateManager()
             app = new App()
-
+            api = window.location.host ? new API() : new API('http://localhost:5194/')
             // await addSeedData()
         }
     </script>
