@@ -48,6 +48,7 @@ class AccountDeck {
       this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
       this.deckId = Object.hasOwn(data, 'deckId') ? data.deckId : ''
       this.isSelected = Object.hasOwn(data, 'isSelected') ? data.isSelected : false
+      this.selectedCardId = Object.hasOwn(data, 'selectedCardId') ? data.selectedCardId : null
    }
 }
 
@@ -116,6 +117,7 @@ class DeckListItem {
       this.deckId = accountDeck.deckId
       this.accountId = accountDeck.accountId
       this.isSelected = accountDeck.isSelected
+      this.selectedCardId = accountDeck.selectedCardId
       
       this.title = deck.title
    }

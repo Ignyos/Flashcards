@@ -213,6 +213,25 @@ class StateManager {
       this.cards.splice(i,1)
    }
 
+   async setSelectedCard(deckId, cardId) {
+      if (!deckId) return // No deck selected
+      
+      // Find the AccountDeck record for the current user and deck
+      const accountDeck = this.decks.find(item => item.deckId === deckId)
+      if (accountDeck) {
+         accountDeck.selectedCardId = cardId
+         await dbCtx.accountDeck.update(accountDeck)
+      }
+   }
+
+   getSelectedCard(deckId) {
+      if (!deckId) return null // No deck selected
+      
+      // Find the AccountDeck record for the current user and deck
+      const accountDeck = this.decks.find(item => item.deckId === deckId)
+      return accountDeck?.selectedCardId || null
+   }
+
    async setQuestion(question) {
       this.question = question
       await this.updateSelectedQuestion(question.id)

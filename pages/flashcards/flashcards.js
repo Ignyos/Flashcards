@@ -424,11 +424,14 @@ page = {
    },
 
    async deleteCard(card) {
-      await dbCtx.card.delete(card.id)
-      await stateMgr.loadCards()
-      if (stateMgr.account.state.selectedCardId === card.id) {
-         stateMgr.setCard(null)
+      await stateMgr.deleteCard(card)
+      
+      // Clear selected card if it was the deleted one
+      const selectedCardId = stateMgr.getSelectedCard(stateMgr.deckId)
+      if (selectedCardId === card.id) {
+         await stateMgr.setSelectedCard(stateMgr.deckId, null)
       }
+      
       this.refreshTabs()
    },
 
@@ -701,15 +704,24 @@ page = {
       let ele = document.createElement('div')
       ele.id = `card-${card.id}`
       ele.innerText = card.shortPhrase
-      if (stateMgr.account.state.selectedCardId == card.id) {
+      
+      // Use the new per-deck card selection tracking
+      const deckId = stateMgr.deckId
+      const selectedCardId = deckId ? stateMgr.getSelectedCard(deckId) : null
+      
+      if (selectedCardId == card.id) {
          ele.classList.add('item-selected')
          ele.appendChild(this.editCardBtn(card))
          ele.appendChild(this.deleteCardBtn(card))
       } else {
          ele.classList.add('item')
          ele.addEventListener('click', async () => {
-            await stateMgr.setCard(card)
-            this.refreshTabs()
+            if (deckId) {
+               await stateMgr.setSelectedCard(deckId, card.id)
+               // Reload deck data to ensure UI reflects database state
+               await stateMgr.loadDecks()
+               this.refreshTabs()
+            }
          })
       }
       return ele
