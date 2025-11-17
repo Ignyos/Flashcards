@@ -368,7 +368,7 @@
    font-size: 20px;
 }
 
-#short-phrase {
+#card-short-phrase {
    font-size: inherit;
    border: none;
    outline: none;
@@ -376,7 +376,7 @@
    border-radius: 4px;
 }
 
-#phrase {
+#card-phrase {
    resize: none;
    font-size: inherit;
    border: none;
@@ -386,7 +386,7 @@
    overflow-y: auto;
 }
 
-#answer {
+#card-answer {
    resize: none;
    font-size: inherit;
    border: none;
