@@ -46,6 +46,7 @@ class AccountDeck {
       // composit key
       this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
       this.deckId = Object.hasOwn(data, 'deckId') ? data.deckId : ''
+      this.isSelected = Object.hasOwn(data, 'isSelected') ? data.isSelected : false
    }
 }
 
@@ -113,6 +114,7 @@ class DeckListItem {
    constructor(accountDeck, deck) {
       this.deckId = accountDeck.deckId
       this.accountId = accountDeck.accountId
+      this.isSelected = accountDeck.isSelected
       
       this.title = deck.title
    }

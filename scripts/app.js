@@ -188,7 +188,8 @@ class App {
       ok.classList.add('modal-btn')
       ok.classList.add('ok')
       ok.innerText = 'OK'
-      ok.addEventListener('click', okFn)
+      const fn = () => { okFn(); this.hideModal(); }
+      ok.addEventListener('click', fn)
       return ok
    }
 

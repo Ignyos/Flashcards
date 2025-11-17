@@ -9,7 +9,7 @@ const stores = {
 }
 
 let db;
-const request = indexedDB.open("ignyos.flashcards", 2);
+const request = indexedDB.open("ignyos.flashcards", 3);
 
 request.onupgradeneeded = function(event) {
    db = event.target.result;
@@ -17,7 +17,7 @@ request.onupgradeneeded = function(event) {
    const accountStore = db.createObjectStore(stores.ACCOUNT, { keyPath: "id" });
    accountStore.createIndex("name", "name", { unique: true });
 
-   const accountDeckStore = db.createObjectStore(stores.ACCOUNT_DECK, { keyPath: "deckId" });
+   const accountDeckStore = db.createObjectStore(stores.ACCOUNT_DECK, { keyPath: ["accountId", "deckId"] });
    accountDeckStore.createIndex("accountId", "accountId", { unique: false });
 
    const metaDataStore = db.createObjectStore(stores.METADATA, { keyPath: "id" });
@@ -273,6 +273,25 @@ const dbCtx = {
             console.error(error);
          }
       },
+      async addOrUpdate(accountDeck) {
+         try {
+            const store = getObjectStore(stores.ACCOUNT_DECK, "readwrite");
+            const request = store.put(accountDeck); // Use put() to handle duplicates
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("AccountDeck not added or updated");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            throw error;
+         }
+      },
       async update(accountDeck) {
          try {
             const store = getObjectStore(stores.ACCOUNT_DECK, "readwrite");
@@ -373,13 +392,28 @@ const dbCtx = {
             const store = getObjectStore(stores.METADATA, "readwrite");
             const request = store.get(1);
 
-            request.onsuccess = function(event) {
-               const metaData = event.target.result;
-               metaData.selectedAccountId = accountId;
-               store.put(metaData);
-            };
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const metaData = event.target.result;
+                  metaData.selectedAccountId = accountId;
+                  const putRequest = store.put(metaData);
+                  
+                  putRequest.onsuccess = function() {
+                     resolve();
+                  };
+                  
+                  putRequest.onerror = function() {
+                     reject("Failed to update selected account");
+                  };
+               };
+
+               request.onerror = function() {
+                  reject("Failed to get metadata");
+               };
+            });
          } catch (error) {
             console.error(error);
+            throw error;
          }
       },
    },

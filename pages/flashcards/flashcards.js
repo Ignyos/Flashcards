@@ -228,8 +228,8 @@ page = {
                deckId: existingDeck.id
             })
             
-            // Use update instead of add to handle potential duplicates
-            await dbCtx.accountDeck.update(newAccountDeck)
+            // Add new AccountDeck record (creates a new relationship for this user)
+            await dbCtx.accountDeck.add(newAccountDeck)
             
             // Create a DeckListItem for the state manager
             let deckListItem = new DeckListItem(newAccountDeck, existingDeck)
@@ -392,10 +392,10 @@ page = {
    },
 
    async deleteDeck(deck) {
-      await dbCtx.deck.delete(deck.id)
-      await dbCtx.accountDeck.deleteByDeckId(deck.id)
+      // Delete only the AccountDeck record (association between user and deck)
+      await dbCtx.accountDeck.delete(stateMgr.account.id, deck.deckId)
       await stateMgr.loadDecks()
-      if (stateMgr.deckId === deck.id) {
+      if (stateMgr.deckId === deck.deckId) {
          stateMgr.setDeckId(null)
          await stateMgr.loadCards()
       }
@@ -508,12 +508,22 @@ page = {
       let ele = document.createElement('div')
       ele.id = `deck-${deck.deckId}`
 
+      // Create checkbox for quiz selection
+      let checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.checked = deck.isSelected
+      checkbox.addEventListener('change', async (e) => {
+         await this.toggleDeckSelection(deck.deckId, e.target.checked)
+      })
+      ele.appendChild(checkbox)
+
       let txt = document.createElement('div')
       txt.innerText = deck.title
       ele.appendChild(txt)
 
       if (stateMgr.account.state.selectedDeckId == deck.deckId) {
          ele.classList.add('item-selected')
+         ele.appendChild(document.createElement('div')) // Placeholder for alignment
          ele.appendChild(this.editDeckBtn(deck))
          ele.appendChild(this.deleteDeckBtn(deck))
       } else {
@@ -531,18 +541,106 @@ page = {
       let ele = document.createElement('div')
       ele.classList.add('edit')
       ele.addEventListener('click', () => {
-         this.showDeckModal(deck)
+         let item = document.getElementById(`deck-${deck.deckId}`)
+         let edit = this.deckListItemEditing(deck)
+         item.replaceWith(edit)
+         document.getElementById('edit-deck').focus()
       })
       return ele
    },
 
    deleteDeckBtn(deck) {
       let ele = document.createElement('div')
-      ele.classList.add('delete')
+      ele.classList.add('trash')
       ele.addEventListener('click', () => {
          this.showDeleteDeckConfirm(deck)
       })
       return ele
+   },
+
+   deckListItemEditing(deck) {
+      let ele = document.createElement('div')
+      ele.id = `deck-${deck.deckId}`
+      ele.classList.add('item-editing')
+      
+      // Add checkbox (maintaining same structure as normal item)
+      let checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.checked = deck.isSelected
+      checkbox.addEventListener('change', async (e) => {
+         await this.toggleDeckSelection(deck.deckId, e.target.checked)
+      })
+      ele.appendChild(checkbox)
+      
+      ele.appendChild(this.getEditDeckInput(deck))
+      ele.appendChild(this.getEditDeckButton(deck))
+      return ele
+   },
+
+   getEditDeckInput(deck) {
+      let input = document.createElement('input')
+      input.type = 'text'
+      input.spellcheck = false
+      input.placeholder = 'A title is required!'
+      input.value = deck.title
+      input.id = 'edit-deck'
+      input.classList.add('edit-deck')
+      input.addEventListener('keyup', async (event) => {
+         if (event.key == 'Enter') {
+            await this.editDeck(deck)
+         } else if (event.key == 'Escape') {
+            this.refreshTabs()
+         }
+      })
+      return input
+   },
+
+   getEditDeckButton(deck) {
+      let btn = document.createElement('div')
+      btn.classList.add('btn')
+      btn.classList.add('check')
+      btn.addEventListener('click', async () => {
+         await this.editDeck(deck)
+      })
+      return btn
+   },
+
+   async editDeck(deck) {
+      let val = document.getElementById('edit-deck').value.trim()
+      if (val == '') return
+      
+      // Update the local state
+      deck.title = val
+      
+      // Update the database - need to update the actual Deck record
+      const deckToUpdate = deck.toDeck()
+      deckToUpdate.title = val
+      await dbCtx.deck.update(deckToUpdate)
+      
+      // Refresh the deck list
+      await stateMgr.loadDecks()
+      this.refreshTabs()
+   },
+
+   async toggleDeckSelection(deckId, isSelected) {
+      try {
+         // Update the local state
+         const deck = stateMgr.decks.find(d => d.deckId === deckId)
+         if (deck) {
+            deck.isSelected = isSelected
+         }
+
+         // Update the database
+         const accountDeck = new AccountDeck({
+            accountId: stateMgr.account.id,
+            deckId: deckId,
+            isSelected: isSelected
+         })
+         
+         await dbCtx.accountDeck.update(accountDeck)
+      } catch (error) {
+         console.error('Error toggling deck selection:', error)
+      }
    },
 
    get cardList() {
