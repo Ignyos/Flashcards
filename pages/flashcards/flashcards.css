@@ -176,12 +176,16 @@
    padding-left: .3rem;
    cursor: pointer;
    padding: 6px 0 6px 7px;
-   /* align-items: center; */
    gap: 8px;
 }
 
 .item {
    border: solid 1px transparent;
+}
+
+.item-selected {
+   border: solid .1rem rgba(70, 163, 255, .8);
+   border-radius: .25rem;
 }
 
 #deck-list .item:hover {
@@ -198,18 +202,6 @@
       border-left: solid 1px rgba(70, 163, 255, .8);
    }
 }
-
-/* #deck-list , .item-selected {
-   display: grid;
-   grid-template-columns: auto auto 1fr 24px 36px;
-   font-size: 18px;
-   border-left: solid 3px rgba(70, 163, 255, .8);
-   padding: 6px 0 6px 5px;
-   background: linear-gradient(90deg, #272e34, transparent);
-   cursor: default;
-   align-items: center;
-   gap: 8px;
-} */
 
 #deck-list .item input[type="checkbox"],
 #deck-list .item-selected input[type="checkbox"] {
@@ -291,36 +283,35 @@
     border-top-right-radius: 8px;
 }
 
-#card-list .item {
+#card-list , .card-item {
    font-size: 18px;
    border-left: solid 1px transparent;
-   padding-left: 7px;
-   cursor: pointer;
    padding: 6px 0 6px 7px;
+   cursor: pointer;
+   border: solid 1px transparent;
 }
 
-#card-list .item:hover {
+#card-list , .card-item:hover {
    background: linear-gradient(90deg, #252a30, transparent);
    animation: item-hover .8s infinite;
    animation-direction: alternate;
+   border-left: solid 1px rgba(70, 163, 255, .8);
 }
 
-#card-list .item-selected {
+#card-list , .card-item-selected {
    display: grid;
-   grid-template-columns: 1fr 24px 36px;
+   grid-template-columns: 1fr 2rem 2rem;
    font-size: 18px;
    border-left: solid 3px rgba(70, 163, 255, .8);
    padding: 6px 0 6px 5px;
    background: linear-gradient(90deg, #272e34, transparent);
    cursor: default;
-}
-
-.item-selected {
    border: solid .1rem rgba(70, 163, 255, .8);
    border-radius: .25rem;
+   gap: 8px;
 }
 
-#card-list .item-editing {
+#card-list .card-item-editing {
    display: grid;
    grid-template-columns: 1fr 36px;
    font-size: 18px;
@@ -329,6 +320,7 @@
    background: linear-gradient(90deg, #272e34, transparent);
    cursor: default;
    margin-right: 6px;
+   align-items: center;
 }
 
 #card-topic {
@@ -339,13 +331,13 @@
    color: #000;
 }
 
-#card-list .item-editing .btn {
+#card-list .card-item-editing .btn {
    background-color: #FFFF;
    border-top-right-radius: 6px;
    border-bottom-right-radius: 6px;
 }
 
-#card-list .item-editing .btn:hover {
+#card-list .card-item-editing .btn:hover {
    animation: btn-item-hover .6s infinite;
    animation-direction: alternate;
 }

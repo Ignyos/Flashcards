@@ -205,12 +205,14 @@ class StateManager {
    }
 
    async deleteCard(card) {
-      card.deletedDate = new Date().toISOString()
-      await dbCtx.card.update(card)
-      let i = this.cards.findIndex((e) => {
-         e.id == card.id
-      })
-      this.cards.splice(i,1)
+      // Hard delete the card from the database (removes data for all users)
+      await dbCtx.card.delete(card.id)
+      
+      // Remove from the in-memory cards array
+      let i = this.cards.findIndex((e) => e.id == card.id)
+      if (i > -1) {
+         this.cards.splice(i, 1)
+      }
    }
 
    async setSelectedCard(deckId, cardId) {

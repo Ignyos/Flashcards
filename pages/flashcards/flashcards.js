@@ -710,11 +710,11 @@ page = {
       const selectedCardId = deckId ? stateMgr.getSelectedCard(deckId) : null
       
       if (selectedCardId == card.id) {
-         ele.classList.add('item-selected')
+         ele.classList.add('card-item-selected')
          ele.appendChild(this.editCardBtn(card))
          ele.appendChild(this.deleteCardBtn(card))
       } else {
-         ele.classList.add('item')
+         ele.classList.add('card-item')
          ele.addEventListener('click', async () => {
             if (deckId) {
                await stateMgr.setSelectedCard(deckId, card.id)
@@ -738,7 +738,7 @@ page = {
 
    deleteCardBtn(card) {
       let ele = document.createElement('div')
-      ele.classList.add('delete')
+      ele.classList.add('trash')
       ele.addEventListener('click', () => {
          this.showDeleteCardConfirm(card)
       })

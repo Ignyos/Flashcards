@@ -532,6 +532,26 @@ const dbCtx = {
             console.error(error);
             throw error;
          }
+      },
+
+      async delete(cardId) {
+         try {
+            const store = getObjectStore(stores.CARD, "readwrite");
+            const request = store.delete(cardId);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Card not deleted");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            throw error;
+         }
       }
    },
    questionAnswer: {
