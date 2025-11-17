@@ -31,6 +31,7 @@ class AccountState {
 
       // this.currentQuizId = Object.hasOwn(data, 'currentQuizId') ? data.currentQuizId : ''
       this.selectedDeckId = Object.hasOwn(data, 'selectedDeckId') ? data.selectedDeckId : ''
+      this.selectedTab = Object.hasOwn(data, 'selectedTab') ? data.selectedTab : 'decks'
 
       this.statsView = Object.hasOwn(data, 'statsView') ? data.statsView : statsViews.BY_QUESTION
       /**

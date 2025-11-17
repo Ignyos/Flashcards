@@ -525,12 +525,12 @@ const dbCtx = {
                };
 
                request.onerror = function(event) {
-                  resolve(false);
+                  reject("Card not updated");
                };
             });
          } catch (error) {
             console.error(error);
-            resolve(false);
+            throw error;
          }
       }
    },

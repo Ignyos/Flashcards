@@ -182,9 +182,9 @@ class StateManager {
    
    
    async addCard(card) {
-      card.id = await newCardId()
+      // Card should already have an ID when passed to this method
       this.card = card
-      await dbCtx.card.add(card)
+      // Don't add to database here - it's already been added in saveCard
       this.cards.push(card)
       this.cards.sort((a,b) => {
          return a.shortPhrase.localeCompare(b.shortPhrase)

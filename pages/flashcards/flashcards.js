@@ -1,5 +1,15 @@
 page = {
-   currentTab: 'decks', // Track active tab: 'decks' or 'cards'
+   get currentTab() {
+      return stateMgr.account?.state?.selectedTab || 'decks'
+   },
+
+   set currentTab(value) {
+      if (stateMgr.account?.state) {
+         stateMgr.account.state.selectedTab = value
+         // Save the account state to persist the tab selection
+         dbCtx.account.update(stateMgr.account)
+      }
+   },
 
    get element() {
       let ele = document.createElement('div')
@@ -72,6 +82,8 @@ page = {
       if (tabId === 'decks') {
          this.showDeckModal()
       } else if (tabId === 'cards') {
+         // Switch to cards tab when adding a card
+         this.switchTab('cards')
          this.showCardModal()
       }
    },
@@ -362,8 +374,10 @@ page = {
          return
       }
 
-      if (stateMgr.card.isNew) {
+      if (!stateMgr.card.id || stateMgr.card.isNew) {
+         // Create new card
          let newCard = new Card({
+            id: newId(6), // Generate a new ID
             shortPhrase: shortPhrase,
             phrase: phrase,
             answer: answer,
@@ -372,6 +386,7 @@ page = {
          await dbCtx.card.add(newCard)
          await stateMgr.addCard(newCard)
       } else {
+         // Update existing card
          stateMgr.card.shortPhrase = shortPhrase
          stateMgr.card.phrase = phrase
          stateMgr.card.answer = answer
@@ -429,6 +444,8 @@ page = {
          contentElement.appendChild(this.deckList)
       } else if (this.currentTab === 'cards') {
          if (stateMgr?.deckId) {
+            // Add deck header
+            contentElement.appendChild(this.getDeckHeader())
             contentElement.appendChild(this.cardList)
          } else {
             contentElement.appendChild(this.getEmptyState('Select a deck to view cards'))
@@ -444,6 +461,21 @@ page = {
       emptyDiv.style.fontSize = '18px'
       emptyDiv.textContent = message
       return emptyDiv
+   },
+
+   getDeckHeader() {
+      let headerDiv = document.createElement('div')
+      headerDiv.classList.add('deck-header')
+      
+      // Get the current deck name
+      let currentDeck = stateMgr.decks?.find(d => d.deckId === stateMgr.deckId)
+      let deckName = currentDeck?.title || 'Unknown Deck'
+      
+      headerDiv.innerHTML = `
+         <h2>Cards in: <span class="deck-name">${deckName}</span></h2>
+      `
+      
+      return headerDiv
    },
 
    refreshTabs() {
