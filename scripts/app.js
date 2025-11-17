@@ -140,33 +140,16 @@ class App {
    }
 
    input(okFn, message = 'Enter Value', addtlElement = null) {
-      this.getModal(okFn, message, 'input', addtlElement)
-   }
-
-   getModal(okFn, message, type, addtlElement = null) {
       this.hideModal()
       let ele = document.createElement('div')
       ele.classList.add('modal')
+      ele.classList.add('input')
       if (addtlElement) ele.appendChild(addtlElement)
 
-      let main;
-      switch (type) {
-         case 'confirm':
-            main = document.createElement('div')
-            main.classList.add('msg')
-            main.innerText = message
-            ele.classList.add('confirm')
-            break
-         case 'input':
-            main = document.createElement('input')
-            main.id = 'modal-input'
-            main.type = 'text'
-            main.placeholder = message
-            ele.classList.add('input')
-            break
-         default:
-            break
-      }
+      let main = document.createElement('input')
+      main.id = 'modal-input'
+      main.type = 'text'
+      main.placeholder = message
 
       ele.appendChild(main)
       const ctrls = document.createElement('div')
@@ -341,7 +324,7 @@ class SiteHeader {
 
       ul.appendChild(document.createElement('hr'))
       
-      enabled = this.doEnableQuizBtn()
+      enabled = this.quizBtnEnabled
       let quizMe = this.getMenuItem("Quiz Me!", false, enabled)
       if (enabled) this.addPageSwitcher(quizMe, pages.QUIZ, () => stateMgr.createNewQuiz())
       ul.appendChild(quizMe)
@@ -370,12 +353,6 @@ class SiteHeader {
       })
    }
    
-   doEnableQuizBtn() {
-      const isQuizPage = stateMgr.account?.state.currentPage == pages.QUIZ
-      const hasCards = stateMgr.cards && stateMgr.cards.length > 0
-      return !isQuizPage && hasCards
-   }
-
    getMenuItem(txt, submenu = false, enabled = true) {
       let li = document.createElement('li')
       let span = document.createElement('span')
@@ -410,13 +387,6 @@ class SiteHeader {
             submenu.classList.add('hidden');
             document.removeEventListener('click', this.hideSubMenuOnClickOutside.bind(this, submenu));
         }
-   }
-
-   hideElementOnClickOutside(element, event) {
-      if (!element.contains(event.target)) {
-            element.classList.add('hidden');
-            document.removeEventListener('click', this.hideElementOnClickOutside.bind(this, element));
-      }
    }
 
    async getAcctSubMenu() {

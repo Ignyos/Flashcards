@@ -316,14 +316,6 @@
    align-items: center;
 }
 
-#card-topic {
-   border: none;
-   outline: none;
-   padding: 6px;
-   font-size: 18px;
-   color: #000;
-}
-
 #card-list .card-item-editing .btn {
    background-color: #FFFF;
    border-top-right-radius: 6px;
