@@ -342,8 +342,8 @@ class SiteHeader {
    
    doEnableQuizBtn() {
       const isQuizPage = stateMgr.account?.state.currentPage == pages.QUIZ
-      const canCreateQuiz = stateMgr.focusTopicIds.length > 0
-      return !isQuizPage && canCreateQuiz
+      const hasCards = stateMgr.cards && stateMgr.cards.length > 0
+      return !isQuizPage && hasCards
    }
 
    getMenuItem(txt, submenu = false, enabled = true) {

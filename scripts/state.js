@@ -13,12 +13,11 @@ class StateManager {
       this.account;
       
       //#flashcards page
-      this.subjects;
-      this.topics;
-      this.questions;
+      this.decks;
+      this.cards;
 
       //#flashcards & quiz page
-      this.question;
+      this.card;
       
       //#stats page
       this.quizes;
@@ -85,10 +84,9 @@ class StateManager {
    }
 
    clearPageData() {
-      this.subjects = []
-      this.topics = []
-      this.questions = []
-      this.question = null
+      this.decks = []
+      this.cards = []
+      this.card = null
       this.quizes = []
       this.quiz = null
    }
@@ -97,256 +95,122 @@ class StateManager {
 
    async loadFlashcardsPage() {
       if (!this.metaData?.selectedAccountId) { this.clearPageData(); return }
-      if (!await this.loadSubjects()) return
-      if (!await this.loadTopics()) return
-      await this.loadQuestions()
+      if (!await this.loadDecks()) return
+      await this.loadCards()
    }
 
-   async loadSubjects() {
-      this.subjects = await dbCtx.accountSubject.list(this.metaData.selectedAccountId)
-      if (!this.subjects || !this.subjects.length) {
-         this.subjects = []
-         this.topics = []
-         this.questions = []
+   async loadDecks() {
+      this.decks = await dbCtx.accountDeck.list(this.metaData.selectedAccountId)
+      if (!this.decks || !this.decks.length) {
+         this.decks = []
+         this.cards = []
          return false
       } else {
-         this.subjects.sort((a,b) => {
+         this.decks.sort((a,b) => {
             return a.title.localeCompare(b.title)
          })
          return true
       }
    }
 
-   async loadTopics() {
-      this.topics = await dbCtx.topic.all(this.subjectId)
-      if (!this.topics || !this.topics.length) {
-         this.topics = []
-         this.questions = []
-         return false
+   async loadCards() {
+      this.cards = await dbCtx.card.byDeckId(this.deckId)
+      if (!this.cards || !this.cards.length) {
+         this.cards = []
       } else {
-         this.topics.sort((a,b) => {
-            return a.title.localeCompare(b.title)
-         })
-         return true
-      }
-   }
-
-   async loadQuestions() {
-      this.questions = await dbCtx.question.byTopicId(this.topicId)
-      if (!this.questions || !this.questions.length) {
-         this.questions = []
-      } else {
-         this.questions.sort((a,b) => {
+         this.cards.sort((a,b) => {
             return a.shortPhrase.localeCompare(b.shortPhrase)
          })
       }
    }
 
    /**
-    * @returns {string} The Id of the currently selected subject or null if no subject is selected
+    * @returns {string} The Id of the currently selected deck or null if no deck is selected
     */
-   get subjectId() {
-      let result = this.account?.state?.selectedSubjectId ?? null
+   get deckId() {
+      let result = this.account?.state?.selectedDeckId ?? null
       return result
    }
 
-   async setSubjectId(id) {
-      this.account.state.selectedSubjectId = id
+   async setDeckId(id) {
+      this.account.state.selectedDeckId = id
       await dbCtx.account.update(this.account)
    }
 
-   async addNewAccountSubject(data) {
-      this.account.state.selectedSubjectId = data.subjectId
+   async addNewAccountDeck(data) {
+      this.account.state.selectedDeckId = data.deckId
       await dbCtx.account.update(this.account)
-      this.subjects.push(data)
-      this.subjects.sort((a,b) => {
+      this.decks.push(data)
+      this.decks.sort((a,b) => {
          return a.title.localeCompare(b.title)
       })
-      this.topics = []
-      this.questions = []
+      this.cards = []
    }
 
-   async updateAccountSubject(acctSub) {
-      const sub = acctSub.toSubject()
-      await dbCtx.subject.update(sub)
-      this.account.state.selectedSubjectId = acctSub.subjectId
-      let i = this.subjects.findIndex((e) => {
-         e.subjectId == acctSub.subjectId
+   async updateAccountDeck(acctDeck) {
+      const deck = acctDeck.toDeck()
+      await dbCtx.deck.update(deck)
+      this.account.state.selectedDeckId = acctDeck.deckId
+      let i = this.decks.findIndex((e) => {
+         e.deckId == acctDeck.deckId
       })
-      this.subjects[i] = acctSub
-      this.subjects.sort((a,b) => {
+      this.decks[i] = acctDeck
+      this.decks.sort((a,b) => {
          return a.title.localeCompare(b.title)
       })
    }
 
-   async deleteAccountSubject(acctSub) {
-      acctSub.deletedDate = new Date().toISOString()
-      await dbCtx.accountSubject.delete(this.account.id, acctSub.subjectId)
-      let i = this.subjects.findIndex((e) => e.subjectId == acctSub.subjectId)
-      this.subjects.splice(i,1)
-      if (this.account.state.selectedSubjectId == acctSub.subjectId) {
-         this.account.state.selectedSubjectId = ''
+   async deleteAccountDeck(acctDeck) {
+      acctDeck.deletedDate = new Date().toISOString()
+      await dbCtx.accountDeck.delete(this.account.id, acctDeck.deckId)
+      let i = this.decks.findIndex((e) => e.deckId == acctDeck.deckId)
+      this.decks.splice(i,1)
+      if (this.account.state.selectedDeckId == acctDeck.deckId) {
+         this.account.state.selectedDeckId = ''
          await dbCtx.account.update(this.account)
-         this.topics = []
-         this.questions = []
+         this.cards = []
       }
    }
 
    /**
-    * @returns {AccountSubject} The currently selected subject or null if no subject is selected
+    * @returns {AccountDeck} The currently selected deck or null if no deck is selected
     */
-   get accountSubject() {
-      const result = this.subjects.find(s => s.subjectId == this.subjectId)
+   get accountDeck() {
+      const result = this.decks.find(d => d.deckId == this.deckId)
       return result ?? null
    }
-
-   /**
-    * @returns {string} The Id of the currently selected topic or null if no topic is selected
-    */
-   get topicId() {
-      let result = null
-      if (this.accountSubject) {
-         result = this.accountSubject.selectedTopicId ?? null
-      }
-      return result
-   }
-
-   get topic() {
-      if (!this.topics || !this.topicId) return null
-      return this.topics.find(t => t.id == this.topicId) ?? null
-   }
-
-   get focusTopicIds() {
-      let result = []
-      if (!this.subjects) return result
-      this.subjects.forEach(s => {
-         s.focusTopicIds.forEach(t => {
-            result.push(t)
-         })
-      })
-      return result
-   }
    
-   async setTopicId(id) {
-      this.accountSubject.selectedTopicId = id
-      this.accountSubject.subjectId = this.subjectId
-      const acctSub = new AccountSubject(this.accountSubject)
-      acctSub.accountId = this.account.id
-      acctSub.selectedTopicId = id
-      await dbCtx.accountSubject.update(acctSub)
-      await this.loadQuestions()
-   }
-
-   async toggleFocusTopic(id) {
-      let i = this.accountSubject.focusTopicIds.indexOf(id)
-      if (i > -1) {
-         this.accountSubject.focusTopicIds.splice(i, 1)
-      } else {
-         this.accountSubject.focusTopicIds.push(id)
-      }
-      await dbCtx.accountSubject.update(this.accountSubject)
-   }
-
-   async addNewTopic(data) {
-      this.accountSubject.selectedTopicId = data.id
-      await dbCtx.accountSubject.update(this.accountSubject)
-      await dbCtx.account.update(this.account)
-      this.topics.push(data)
-      this.topics.sort((a,b) => {
-         return a.title.localeCompare(b.title)
-      })
-      this.questions = []
-   }
-
-   async updateTopic(topic) {
-      this.accountSubject.selectedTopicId = topic.id
-      await dbCtx.accountSubject.update(this.accountSubject)
-
-      let i = this.topics.findIndex((e) => e.id == topic.id)
-      this.topics[i] = topic
-      this.topics.sort((a,b) => {
-         return a.title.localeCompare(b.title)
-      })
-      await dbCtx.topic.update(topic)
-   }
-
-   async updateTopicQuestionCount(increment) {
-      let topic = this.topics.find(t => t.id == this.topicId)
-      topic.questionCount += increment
-      await dbCtx.topic.update(topic)
-      if (topic.questionCount == 0) {
-         // make sure the topic is not selected as a focus topic
-         let i = this.accountSubject.focusTopicIds.indexOf(topic.id)
-         if (i > -1) {
-            this.accountSubject.focusTopicIds.splice(i, 1)
-            await dbCtx.accountSubject.update(this.accountSubject)
-         }
-      }
-   }
    
-   async deleteTopic(topic) {
-      topic.deletedDate = new Date().toISOString()
-      await dbCtx.topic.update(topic)
-      let i = this.topics.findIndex((e) => e.id == topic.id)
-      this.topics.splice(i,1)
-      if (this.accountSubject.selectedTopicId == topic.id) {
-         this.accountSubject.selectedTopicId = ''
-         await dbCtx.accountSubject.update(this.accountSubject)
-         this.questions = []
-      }
-      i = this.accountSubject.focusTopicIds.indexOf(topic.id)
-      if (i > -1) {
-         this.accountSubject.focusTopicIds.splice(i, 1)
-      }
-      await dbCtx.accountSubject.update(this.accountSubject)
-   }
-
-   async addQuestion(question) {
-      await this.updateTopicQuestionCount(1)
-      question.id = await newQuestionId()
-      this.question = question
-      await this.updateSelectedQuestion(question.id)
-      await dbCtx.question.add(question)
-      this.questions.push(question)
-      this.questions.sort((a,b) => {
+   async addCard(card) {
+      card.id = await newCardId()
+      this.card = card
+      await dbCtx.card.add(card)
+      this.cards.push(card)
+      this.cards.sort((a,b) => {
          return a.shortPhrase.localeCompare(b.shortPhrase)
       })
    }
 
-   async updateQuestion(question) {
-      await this.updateSelectedQuestion(question.id)
-      await dbCtx.question.update(question)
-      let i = this.questions.findIndex((e) => e.id == question.id)
+   async updateCard(card) {
+      await dbCtx.card.update(card)
+      let i = this.cards.findIndex((e) => e.id == card.id)
       if (i > -1) {
-         this.questions[i] = question
+         this.cards[i] = card
       } else {
-         alert("Question not found in State")
+         alert("Card not found in State")
       }
-      this.questions.sort((a,b) => {
+      this.cards.sort((a,b) => {
          return a.shortPhrase.localeCompare(b.shortPhrase)
       })      
    }
 
-   async updateSelectedQuestion(id) {
-      const tId = this.topicId
-      if (tId) {
-         this.accountSubject.selectedQuestion[tId] = id
-         await dbCtx.accountSubject.update(this.accountSubject)
-      }
-   }
-
-   async deleteQuestion(question) {
-      await this.updateTopicQuestionCount(-1)
-      question.deletedDate = new Date().toISOString()
-      await dbCtx.question.update(question)
-      if (this.accountSubject.selectedQuestion[this.topicId] === question.id) {
-         delete this.accountSubject.selectedQuestion[this.topicId]
-         await dbCtx.accountSubject.update(this.accountSubject)
-      }
-      let i = this.questions.findIndex((e) => {
-         e.id == question.id
+   async deleteCard(card) {
+      card.deletedDate = new Date().toISOString()
+      await dbCtx.card.update(card)
+      let i = this.cards.findIndex((e) => {
+         e.id == card.id
       })
-      this.questions.splice(i,1)
+      this.cards.splice(i,1)
    }
 
    async setQuestion(question) {
@@ -367,9 +231,11 @@ class StateManager {
       this.quiz = await dbCtx.quiz.latest(acct.id)
 
       if (!this.quiz) {
-         await this.loadSubjects()
-         if (this.focusTopicIds.length === 0) {
-            messageCenter.addError('No topics selected for quiz.')
+         await this.loadDecks()
+         // TODO: Update quiz logic for new deck structure - no focus topics anymore
+         // For now, create quiz if we have any decks
+         if (this.decks.length === 0) {
+            messageCenter.addError('No decks available for quiz.')
             return true
          } else {
             this.quiz = await dbCtx.quiz.create(acct.id, acct.settings.defaultQuestionCount)

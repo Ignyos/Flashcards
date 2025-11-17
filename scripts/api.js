@@ -14,10 +14,10 @@ class API {
     if (!message) {
       return;
     }
-    await fetch(this.apiBaseUrl + 'log/app', {
-        method: 'POST',
-        headers: this.#headers,
-        body: JSON.stringify(message)
-    });
+    // await fetch(this.apiBaseUrl + 'log/app', {
+    //     method: 'POST',
+    //     headers: this.#headers,
+    //     body: JSON.stringify(message)
+    // });
   }
 }

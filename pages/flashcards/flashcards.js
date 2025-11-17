@@ -1,21 +1,606 @@
 page = {
+   currentTab: 'decks', // Track active tab: 'decks' or 'cards'
+
    get element() {
       let ele = document.createElement('div')
       ele.id = 'page'
       ele.appendChild(navigation.element)
       let panes = document.createElement('div')
       panes.id = 'panes'
-      panes.appendChild(this.subjectPane)
-      panes.appendChild(this.topicPane)
-      panes.appendChild(this.questionPane)
+      panes.appendChild(this.tabHeader)
+      panes.appendChild(this.tabContent)
       ele.appendChild(panes)
       return ele
    },
 
+   get tabHeader() {
+      let header = document.createElement('div')
+      header.id = 'tab-header'
+      header.appendChild(this.getTabButton('decks', 'DECKS'))
+      header.appendChild(this.getTabButton('cards', 'CARDS'))
+      return header
+   },
+
+   get tabContent() {
+      let content = document.createElement('div')
+      content.id = 'tab-content'
+      // Don't populate content immediately - wait for load() to be called
+      return content
+   },
+
+   getTabButton(tabId, tabText) {
+      let button = document.createElement('div')
+      button.classList.add('tab-button')
+      button.setAttribute('data-tab', tabId)
+      
+      // Add active/disabled classes
+      if (this.currentTab === tabId) {
+         button.classList.add('active')
+      }
+      if (tabId === 'cards' && !stateMgr?.deckId) {
+         button.classList.add('disabled')
+      }
+
+      let textSpan = document.createElement('span')
+      textSpan.classList.add('tab-button-text')
+      textSpan.textContent = tabText
+      button.appendChild(textSpan)
+
+      let addBtn = document.createElement('div')
+      addBtn.classList.add('tab-add-btn')
+      addBtn.textContent = '+'
+      
+      // Add click handlers
+      button.addEventListener('click', (e) => {
+         if (!button.classList.contains('disabled') && e.target !== addBtn) {
+            this.switchTab(tabId)
+         }
+      })
+
+      addBtn.addEventListener('click', (e) => {
+         e.stopPropagation()
+         if (!button.classList.contains('disabled')) {
+            this.handleAddClick(tabId)
+         }
+      })
+
+      button.appendChild(addBtn)
+      return button
+   },
+
+   handleAddClick(tabId) {
+      if (tabId === 'decks') {
+         this.showDeckModal()
+      } else if (tabId === 'cards') {
+         this.showCardModal()
+      }
+   },
+
+   async showDeckModal(deck = null) {
+      if (deck) {
+         stateMgr.deck = deck
+         stateMgr.isEditingDeck = true
+      } else {
+         stateMgr.deck = new Deck()
+         stateMgr.isEditingDeck = false
+      }
+      document.getElementById('site-header').classList.add('blur')
+      document.getElementById('nav').classList.add('blur')
+      app.formModal('modal-bg', this.getDeckModal())
+   },
+
+   getDeckModal() {
+      // Message text
+      let message = document.createElement('div')
+      message.classList.add('msg')
+      // message.textContent = 'Create a new deck\n-or-\nselect from existing decks on this device.'
+      let l1 = document.createElement('h2')
+      l1.textContent = 'Create a new deck or select from'
+      let l2 = document.createElement('h2')
+      l2.textContent = ' existing decks on this device.'
+      message.appendChild(l1)
+      message.appendChild(l2)
+
+      // Text input for new deck
+      let titleInput = document.createElement('input')
+      titleInput.id = 'deck-title'
+      titleInput.type = 'text'
+      titleInput.placeholder = 'New Deck Name'
+      titleInput.value = stateMgr.deck.title || ''
+
+      // Dropdown for existing decks
+      let existingSelect = document.createElement('select')
+      existingSelect.id = 'existing-decks'
+      this.populateExistingDecks(existingSelect)
+
+      let ele = document.createElement('div')
+      ele.classList.add('modal')
+      ele.classList.add('deck-modal') // Custom class for multi-input layout
+      ele.appendChild(message)
+      ele.appendChild(titleInput)
+      ele.appendChild(existingSelect)
+      ele.appendChild(this.deckControls)
+      return ele
+   },
+
+   async showCardModal(card = null) {
+      if (card) {
+         stateMgr.card = card
+      } else {
+         stateMgr.card = new Card()
+      }
+      document.getElementById('site-header').classList.add('blur')
+      document.getElementById('nav').classList.add('blur')
+      app.formModal('question-modal-bg', this.getCardModal())
+   },
+
+   getCardModal() {
+      let sp = document.createElement('input')
+      sp.id = 'card-short-phrase'
+      sp.type = 'text'
+      sp.placeholder = 'Short Phrase'
+      sp.value = stateMgr.card.shortPhrase || ''
+
+      let ph = document.createElement('textarea')
+      ph.id = 'card-phrase'
+      ph.placeholder = 'Enter the full phrasing of the question here.'
+      ph.rows = 5
+      ph.innerText = stateMgr.card.phrase || ''
+
+      let an = document.createElement('textarea')
+      an.id = 'card-answer'
+      an.placeholder = 'Enter the answer to the question here.'
+      an.innerText = stateMgr.card.answer || ''
+
+      let frm = document.createElement('div')
+      frm.classList.add('question-form') // Reuse existing form styles
+      frm.appendChild(sp)
+      frm.appendChild(ph)
+      frm.appendChild(an)
+      frm.appendChild(this.cardControls)
+
+      let ele = document.createElement('div')
+      ele.classList.add('question-modal') // Reuse existing modal styles
+      ele.appendChild(frm)
+      return ele
+   },
+
+   async populateExistingDecks(selectElement) {
+      // Add default option
+      let defaultOption = document.createElement('option')
+      defaultOption.value = ''
+      defaultOption.textContent = '-- Select existing deck --'
+      selectElement.appendChild(defaultOption)
+
+      try {
+         // Get all decks from the database
+         const allDecks = await dbCtx.deck.getAll()
+         
+         // Get current user's deck IDs
+         const userDeckIds = stateMgr.decks ? stateMgr.decks.map(d => d.deckId) : []
+         
+         // Filter out decks the user already has
+         const availableDecks = allDecks.filter(deck => !userDeckIds.includes(deck.id))
+         
+         // Populate dropdown with available decks
+         availableDecks.forEach(deck => {
+            let option = document.createElement('option')
+            option.value = deck.id
+            option.textContent = deck.title
+            selectElement.appendChild(option)
+         })
+         
+         // Add event listener to handle selection
+         selectElement.addEventListener('change', async (e) => {
+            if (e.target.value) {
+               // User selected an existing deck - automatically save and close modal
+               document.getElementById('deck-title').value = ''
+               document.getElementById('deck-title').placeholder = 'Or create new deck name'
+               
+               // Automatically save the selected deck
+               await this.saveSelectedDeck(e.target.value)
+            } else {
+               // User cleared selection - restore input placeholder
+               document.getElementById('deck-title').placeholder = 'New Deck Name'
+            }
+         })
+         
+      } catch (error) {
+         console.error('Error loading existing decks:', error)
+      }
+   },
+
+   async saveSelectedDeck(selectedDeckId) {
+      try {
+         // First check if user already has this deck (shouldn't happen due to filtering, but safety check)
+         const userDeckIds = stateMgr.decks ? stateMgr.decks.map(d => d.deckId) : []
+         if (userDeckIds.includes(selectedDeckId)) {
+            console.log('User already has this deck')
+            return
+         }
+
+         // Get the selected deck from the database
+         let existingDeck = await dbCtx.deck.get(selectedDeckId)
+         if (existingDeck) {
+            // Create AccountDeck relationship
+            let newAccountDeck = new AccountDeck({
+               accountId: stateMgr.account.id, 
+               deckId: existingDeck.id
+            })
+            
+            // Use update instead of add to handle potential duplicates
+            await dbCtx.accountDeck.update(newAccountDeck)
+            
+            // Create a DeckListItem for the state manager
+            let deckListItem = new DeckListItem(newAccountDeck, existingDeck)
+            await stateMgr.addNewAccountDeck(deckListItem)
+            
+            // Close the modal and refresh
+            this.refreshTabs()
+            document.getElementById('site-header').classList.remove('blur')
+            document.getElementById('nav').classList.remove('blur')
+            app.hideModal()
+         }
+      } catch (error) {
+         console.error('Error saving selected deck:', error)
+      }
+   },
+
+   get deckControls() {
+      let save = document.createElement('div')
+      save.innerText = "SAVE"
+      save.classList.add('modal-btn')
+      save.classList.add('ok')
+      save.addEventListener('click', async () => {
+         await this.saveDeck()
+      })
+
+      let cancel = document.createElement('div')
+      cancel.innerText = "CANCEL"
+      cancel.classList.add('modal-btn')
+      cancel.classList.add('cancel')
+      cancel.addEventListener('click', () => {
+         document.getElementById('site-header').classList.remove('blur')
+         document.getElementById('nav').classList.remove('blur')
+         app.hideModal()
+      })
+
+      let ele = document.createElement('div')
+      ele.classList.add('ctrls')
+      ele.appendChild(save)
+      ele.appendChild(cancel)
+      return ele
+   },
+
+   async saveDeck() {
+      let titleInput = document.getElementById('deck-title')
+      let existingSelect = document.getElementById('existing-decks')
+      
+      let title = titleInput?.value.trim()
+      let selectedDeckId = existingSelect?.value
+      
+      // Check if user selected an existing deck
+      if (selectedDeckId) {
+         // Add existing deck to user's account
+         let existingDeck = await dbCtx.deck.get(selectedDeckId)
+         if (existingDeck) {
+            let newAccountDeck = new AccountDeck({
+               accountId: stateMgr.account.id, 
+               deckId: existingDeck.id
+            })
+            await dbCtx.accountDeck.add(newAccountDeck)
+            let deckListItem = new DeckListItem(newAccountDeck, existingDeck)
+            await stateMgr.addNewAccountDeck(deckListItem)
+         }
+      } else if (title) {
+         // Check if we're editing an existing deck or creating a new one
+         if (stateMgr.isEditingDeck) {
+            // Edit existing deck
+            stateMgr.deck.title = title
+            await dbCtx.deck.update(stateMgr.deck)
+            await stateMgr.loadDecks()
+         } else {
+            // Create brand new deck
+            let newDeck = new Deck({title: title})
+            let newAccountDeck = new AccountDeck({accountId: stateMgr.account.id, deckId: newDeck.id})
+            await dbCtx.deck.add(newDeck)
+            await dbCtx.accountDeck.add(newAccountDeck)
+            let deckListItem = new DeckListItem(newAccountDeck, newDeck)
+            await stateMgr.addNewAccountDeck(deckListItem)
+         }
+      } else {
+         // No input provided
+         if (!selectedDeckId && !title) {
+            titleInput.focus()
+            return
+         }
+      }
+
+      this.refreshTabs()
+      document.getElementById('site-header').classList.remove('blur')
+      document.getElementById('nav').classList.remove('blur')
+      app.hideModal()
+   },
+
+   get cardControls() {
+      let save = document.createElement('div')
+      save.innerText = "SAVE"
+      save.classList.add('btn')
+      save.classList.add('save')
+      save.addEventListener('click', async () => {
+         await this.saveCard()
+      })
+
+      let cancel = document.createElement('div')
+      cancel.innerText = "CANCEL"
+      cancel.classList.add('btn')
+      cancel.classList.add('cancel')
+      cancel.addEventListener('click', () => {
+         document.getElementById('site-header').classList.remove('blur')
+         document.getElementById('nav').classList.remove('blur')
+         app.hideModal()
+      })
+
+      let ele = document.createElement('div')
+      ele.classList.add('question-controls') // Reuse existing control styles
+      ele.appendChild(save)
+      ele.appendChild(cancel)
+      return ele
+   },
+
+   async saveCard() {
+      let shortPhraseInput = document.getElementById('card-short-phrase')
+      let phraseInput = document.getElementById('card-phrase')
+      let answerInput = document.getElementById('card-answer')
+      
+      let shortPhrase = shortPhraseInput?.value.trim()
+      let phrase = phraseInput?.value.trim()
+      let answer = answerInput?.value.trim()
+
+      if (!shortPhrase) {
+         shortPhraseInput.focus()
+         return
+      }
+
+      if (stateMgr.card.isNew) {
+         let newCard = new Card({
+            shortPhrase: shortPhrase,
+            phrase: phrase,
+            answer: answer,
+            deckId: stateMgr.deckId
+         })
+         await dbCtx.card.add(newCard)
+         await stateMgr.addCard(newCard)
+      } else {
+         stateMgr.card.shortPhrase = shortPhrase
+         stateMgr.card.phrase = phrase
+         stateMgr.card.answer = answer
+         await dbCtx.card.update(stateMgr.card)
+         await stateMgr.loadCards()
+      }
+
+      this.refreshTabs()
+      document.getElementById('site-header').classList.remove('blur')
+      document.getElementById('nav').classList.remove('blur')
+      app.hideModal()
+   },
+
+   showDeleteDeckConfirm(deck) {
+      app.confirm(async () => {
+         await this.deleteDeck(deck)
+      }, `Delete deck "${deck.title}"?`)
+   },
+
+   async deleteDeck(deck) {
+      await dbCtx.deck.delete(deck.id)
+      await dbCtx.accountDeck.deleteByDeckId(deck.id)
+      await stateMgr.loadDecks()
+      if (stateMgr.deckId === deck.id) {
+         stateMgr.setDeckId(null)
+         await stateMgr.loadCards()
+      }
+      this.refreshTabs()
+   },
+
+   showDeleteCardConfirm(card) {
+      app.confirm(async () => {
+         await this.deleteCard(card)
+      }, `Delete card "${card.shortPhrase}"?`)
+   },
+
+   async deleteCard(card) {
+      await dbCtx.card.delete(card.id)
+      await stateMgr.loadCards()
+      if (stateMgr.account.state.selectedCardId === card.id) {
+         stateMgr.setCard(null)
+      }
+      this.refreshTabs()
+   },
+
+   switchTab(tabId) {
+      this.currentTab = tabId
+      this.refreshTabs()
+   },
+
+   updateTabContent(contentElement) {
+      contentElement.innerHTML = ''
+      
+      if (this.currentTab === 'decks') {
+         contentElement.appendChild(this.deckList)
+      } else if (this.currentTab === 'cards') {
+         if (stateMgr?.deckId) {
+            contentElement.appendChild(this.cardList)
+         } else {
+            contentElement.appendChild(this.getEmptyState('Select a deck to view cards'))
+         }
+      }
+   },
+
+   getEmptyState(message) {
+      let emptyDiv = document.createElement('div')
+      emptyDiv.style.padding = '2rem'
+      emptyDiv.style.textAlign = 'center'
+      emptyDiv.style.color = '#aab1b5'
+      emptyDiv.style.fontSize = '18px'
+      emptyDiv.textContent = message
+      return emptyDiv
+   },
+
+   refreshTabs() {
+      // Update tab buttons
+      let tabButtons = document.querySelectorAll('.tab-button')
+      tabButtons.forEach(btn => {
+         let tabId = btn.getAttribute('data-tab')
+         
+         // Update active state
+         if (tabId === this.currentTab) {
+            btn.classList.add('active')
+         } else {
+            btn.classList.remove('active')
+         }
+         
+         // Update disabled state for cards tab
+         if (tabId === 'cards') {
+            if (stateMgr?.deckId) {
+               btn.classList.remove('disabled')
+            } else {
+               btn.classList.add('disabled')
+            }
+         }
+      })
+
+      // Update content
+      let tabContent = document.getElementById('tab-content')
+      if (tabContent) {
+         this.updateTabContent(tabContent)
+      }
+   },
+
    async load() {
-      this.populateSubjectList()
-      this.populateTopicList()
-      this.populateQuestionList()
+      await stateMgr.loadDecks()
+      await stateMgr.loadCards()
+      this.refreshTabs()
+   },
+
+   get deckList() {
+      let ele = document.createElement('div')
+      ele.classList.add('deck-list')
+      this.populateDeckList(ele)
+      return ele
+   },
+
+   populateDeckList(container) {
+      container.innerHTML = ''
+      if (stateMgr.decks) {
+         stateMgr.decks.forEach(deck => {
+            container.appendChild(this.deckListItem(deck))
+         })
+      }
+      if (!stateMgr.decks || stateMgr.decks.length == 0) {
+         let ele = document.createElement('div')
+         ele.classList.add('no-items')
+         ele.innerText = 'Add a deck to get started.'
+         container.appendChild(ele)
+      }
+   },
+
+   deckListItem(deck) {
+      let ele = document.createElement('div')
+      ele.id = `deck-${deck.deckId}`
+
+      let txt = document.createElement('div')
+      txt.innerText = deck.title
+      ele.appendChild(txt)
+
+      if (stateMgr.account.state.selectedDeckId == deck.deckId) {
+         ele.classList.add('item-selected')
+         ele.appendChild(this.editDeckBtn(deck))
+         ele.appendChild(this.deleteDeckBtn(deck))
+      } else {
+         ele.classList.add('item')
+         ele.addEventListener('click', async () => {
+            await stateMgr.setDeckId(deck.deckId)
+            await stateMgr.loadCards()
+            this.refreshTabs()
+         })
+      }
+      return ele
+   },
+
+   editDeckBtn(deck) {
+      let ele = document.createElement('div')
+      ele.classList.add('edit')
+      ele.addEventListener('click', () => {
+         this.showDeckModal(deck)
+      })
+      return ele
+   },
+
+   deleteDeckBtn(deck) {
+      let ele = document.createElement('div')
+      ele.classList.add('delete')
+      ele.addEventListener('click', () => {
+         this.showDeleteDeckConfirm(deck)
+      })
+      return ele
+   },
+
+   get cardList() {
+      let ele = document.createElement('div')
+      ele.classList.add('card-list')
+      this.populateCardList(ele)
+      return ele
+   },
+
+   populateCardList(container) {
+      container.innerHTML = ''
+      if (stateMgr.cards) {
+         stateMgr.cards.forEach(card => {
+            container.appendChild(this.cardListItem(card))
+         })
+      }
+      if (!stateMgr.cards || stateMgr.cards.length == 0) {
+         let ele = document.createElement('div')
+         ele.classList.add('no-items')
+         ele.innerText = 'No cards in this deck.'
+         container.appendChild(ele)
+      }
+   },
+
+   cardListItem(card) {
+      let ele = document.createElement('div')
+      ele.id = `card-${card.id}`
+      ele.innerText = card.shortPhrase
+      if (stateMgr.account.state.selectedCardId == card.id) {
+         ele.classList.add('item-selected')
+         ele.appendChild(this.editCardBtn(card))
+         ele.appendChild(this.deleteCardBtn(card))
+      } else {
+         ele.classList.add('item')
+         ele.addEventListener('click', async () => {
+            await stateMgr.setCard(card)
+            this.refreshTabs()
+         })
+      }
+      return ele
+   },
+
+   editCardBtn(card) {
+      let ele = document.createElement('div')
+      ele.classList.add('edit')
+      ele.addEventListener('click', async () => {
+         this.showCardModal(card)
+      })
+      return ele
+   },
+
+   deleteCardBtn(card) {
+      let ele = document.createElement('div')
+      ele.classList.add('delete')
+      ele.addEventListener('click', () => {
+         this.showDeleteCardConfirm(card)
+      })
+      return ele
    },
 
    async initNav() {
@@ -744,7 +1329,7 @@ navigation = {
 
    get quizBtnEnabled() {
       const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
-      const canCreateQuiz = stateMgr.focusTopicIds.length > 0
-      return !isQuizPage && canCreateQuiz
+      const hasCards = stateMgr.cards && stateMgr.cards.length > 0
+      return !isQuizPage && hasCards
    }
 }

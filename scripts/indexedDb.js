@@ -1,16 +1,15 @@
 const stores = {
    ACCOUNT: "account",
-   ACCOUNT_SUBJECT: "accountSubject",
+   ACCOUNT_DECK: "accountDeck",
    METADATA: "metaData",
-   QUESTION: "question",
+   CARD: "card",
    QUESTION_ANSWER: "questionAnswer",
    QUIZ: "quiz",
-   SUBJECT: "subject",
-   TOPIC: "topic"
+   DECK: "deck"
 }
 
 let db;
-const request = indexedDB.open("ignyos.flashcards", 1);
+const request = indexedDB.open("ignyos.flashcards", 2);
 
 request.onupgradeneeded = function(event) {
    db = event.target.result;
@@ -18,14 +17,14 @@ request.onupgradeneeded = function(event) {
    const accountStore = db.createObjectStore(stores.ACCOUNT, { keyPath: "id" });
    accountStore.createIndex("name", "name", { unique: true });
 
-   const accountSubjectStore = db.createObjectStore(stores.ACCOUNT_SUBJECT, { keyPath: "subjectId" });
-   accountSubjectStore.createIndex("accountId", "accountId", { unique: false });
+   const accountDeckStore = db.createObjectStore(stores.ACCOUNT_DECK, { keyPath: "deckId" });
+   accountDeckStore.createIndex("accountId", "accountId", { unique: false });
 
    const metaDataStore = db.createObjectStore(stores.METADATA, { keyPath: "id" });
    metaDataStore.add({ id: 1, selectedAccountId: '' });
 
-   const questionStore = db.createObjectStore(stores.QUESTION, { keyPath: "id" });
-   questionStore.createIndex("topicId", "topicId", { unique: false });
+   const cardStore = db.createObjectStore(stores.CARD, { keyPath: "id" });
+   cardStore.createIndex("deckId", "deckId", { unique: false });
 
    const questionAnswerStore = db.createObjectStore(stores.QUESTION_ANSWER, { keyPath: "id" });
    questionAnswerStore.createIndex("compsiteIndex", ["accountId", "quizId"], { unique: false });
@@ -33,10 +32,7 @@ request.onupgradeneeded = function(event) {
    const quizStore = db.createObjectStore(stores.QUIZ, { keyPath: "id" });
    quizStore.createIndex("accountId", "accountId", { unique: false });
 
-   const subjectStore = db.createObjectStore(stores.SUBJECT, { keyPath: "id" });
-
-   const topicStore = db.createObjectStore(stores.TOPIC, { keyPath: "id" });
-   topicStore.createIndex("subjectId", "subjectId", { unique: false });
+   const deckStore = db.createObjectStore(stores.DECK, { keyPath: "id" });
 };
 
 request.onsuccess = function(event) {
@@ -224,15 +220,15 @@ const dbCtx = {
          }
       }
    },
-   accountSubject: {
+   accountDeck: {
       async list(accountId) {
          try {
-            const accountSubjects = await this.all(accountId);
-            const subjects = await dbCtx.subject.all(accountId);
+            const accountDecks = await this.all(accountId);
+            const decks = await dbCtx.deck.all(accountId);
 
-            return accountSubjects.map(accountSubject => {
-               const subject = subjects.find(subject => subject.id === accountSubject.subjectId);
-               return new SubjectListItem(accountSubject, subject);
+            return accountDecks.map(accountDeck => {
+               const deck = decks.find(deck => deck.id === accountDeck.deckId);
+               return new DeckListItem(accountDeck, deck);
             });
          } catch (error) {
             console.error(error);
@@ -241,7 +237,7 @@ const dbCtx = {
       },
       async all(acctId) {
          try {
-            const store = getObjectStore(stores.ACCOUNT_SUBJECT, "readonly");
+            const store = getObjectStore(stores.ACCOUNT_DECK, "readonly");
             const index = store.index("accountId");
             const request = index.getAll(acctId);
 
@@ -259,10 +255,10 @@ const dbCtx = {
             return [];
          }
       },
-      async add(accountSubject) {
+      async add(accountDeck) {
          try {
-            const store = getObjectStore(stores.ACCOUNT_SUBJECT, "readwrite");
-            const request = store.add(accountSubject);
+            const store = getObjectStore(stores.ACCOUNT_DECK, "readwrite");
+            const request = store.add(accountDeck);
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
@@ -270,17 +266,17 @@ const dbCtx = {
                };
 
                request.onerror = function(event) {
-                  reject("AccountSubject not added");
+                  reject("AccountDeck not added");
                };
             });
          } catch (error) {
             console.error(error);
          }
       },
-      async update(accountSubject) {
+      async update(accountDeck) {
          try {
-            const store = getObjectStore(stores.ACCOUNT_SUBJECT, "readwrite");
-            const request = store.put(accountSubject);
+            const store = getObjectStore(stores.ACCOUNT_DECK, "readwrite");
+            const request = store.put(accountDeck);
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
@@ -288,16 +284,16 @@ const dbCtx = {
                };
 
                request.onerror = function(event) {
-                  reject("AccountSubject not updated");
+                  reject("AccountDeck not updated");
                };
             });
          } catch (error) {
             console.error(error);
          }
       },
-      async delete(accountId, subjectId) {
+      async delete(accountId, deckId) {
          try {
-            const store = getObjectStore(stores.ACCOUNT_SUBJECT, "readwrite");
+            const store = getObjectStore(stores.ACCOUNT_DECK, "readwrite");
             const index = store.index("accountId");
             const request = index.openCursor(IDBKeyRange.only(accountId));
 
@@ -305,7 +301,7 @@ const dbCtx = {
                request.onsuccess = function(event) {
                   const cursor = event.target.result;
                   if (cursor) {
-                     if (cursor.value.subjectId === subjectId) {
+                     if (cursor.value.deckId === deckId) {
                         const deleteRequest = cursor.delete();
                         deleteRequest.onsuccess = function() {
                            resolve();
@@ -317,12 +313,12 @@ const dbCtx = {
                         cursor.continue();
                      }
                   } else {
-                     reject("AccountSubject not found");
+                     reject("AccountDeck not found");
                   }
                };
 
                request.onerror = function(event) {
-                  reject("AccountSubject not found");
+                  reject("AccountDeck not found");
                };
             });
          } catch (error) {
@@ -387,22 +383,22 @@ const dbCtx = {
          }
       },
    },
-   question: {
+   card: {
       /**
-       * Only returns the questions that have not been deleted.
-       * @param {*} topicId 
+       * Only returns the cards that have not been deleted.
+       * @param {*} deckId 
        * @returns 
        */
-      async byTopicId(topicId) {
-         if (!topicId) return [];
+      async byDeckId(deckId) {
+         if (!deckId) return [];
          try {
-            const store = getObjectStore(stores.QUESTION, "readonly");
-            const index = store.index("topicId");
-            const request = index.getAll(topicId);
+            const store = getObjectStore(stores.CARD, "readonly");
+            const index = store.index("deckId");
+            const request = index.getAll(deckId);
 
             return await new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  resolve(event.target.result.filter(question => !question.deletedDate).sort((a, b) => a.shortPhrase.localeCompare(b.shortPhrase)));
+                  resolve(event.target.result.filter(card => !card.deletedDate).sort((a, b) => a.shortPhrase.localeCompare(b.shortPhrase)));
                };
 
                request.onerror = function(event) {
@@ -416,7 +412,7 @@ const dbCtx = {
       },
       async get(id) {
          try {
-            const store = getObjectStore(stores.QUESTION, "readonly");
+            const store = getObjectStore(stores.CARD, "readonly");
             const request = store.get(id);
 
             return await new Promise((resolve, reject) => {
@@ -434,18 +430,18 @@ const dbCtx = {
             });
          } catch (error) {
             console.error(error);
-            return new Question();
+            return new Card();
          }
       },
       async byIdArray(ids) {
          try {
-            const store = getObjectStore(stores.QUESTION, "readonly");
+            const store = getObjectStore(stores.CARD, "readonly");
             const request = store.getAll();
 
             return await new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  const questions = event.target.result;
-                  resolve(questions.filter(question => ids.includes(question.id)));
+                  const cards = event.target.result;
+                  resolve(cards.filter(card => ids.includes(card.id)));
                };
 
                request.onerror = function(event) {
@@ -466,10 +462,10 @@ const dbCtx = {
             return false;
          }
       },
-      async add(question) {
+      async add(card) {
          try {
-            const store = getObjectStore(stores.QUESTION, "readwrite");
-            const request = store.add(question);
+            const store = getObjectStore(stores.CARD, "readwrite");
+            const request = store.add(card);
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
@@ -477,17 +473,17 @@ const dbCtx = {
                };
 
                request.onerror = function(event) {
-                  reject("Question not added");
+                  reject("Card not added");
                };
             });
          } catch (error) {
             console.error(error);
          }
       },
-      async update(question) {
+      async update(card) {
          try {
-            const store = getObjectStore(stores.QUESTION, "readwrite");
-            const request = store.put(new Question(question));
+            const store = getObjectStore(stores.CARD, "readwrite");
+            const request = store.put(new Card(card));
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
@@ -850,28 +846,28 @@ const dbCtx = {
          }
       }
    },
-   subject: {
+   deck: {
       /**
-       * First gets all the AccountSubject associated with the account id. Then gets all the subjects
-       * based on the subject ids from the AccountSubjects.  
+       * First gets all the AccountDeck associated with the account id. Then gets all the decks
+       * based on the deck ids from the AccountDecks.  
        * @param {*} acctId 
        * @returns 
        */
       async all(acctId) {
          try {
-            const accountSubjects = await dbCtx.accountSubject.all(acctId);
-            const subjectIds = accountSubjects.map(as => as.subjectId);
-            const store = getObjectStore(stores.SUBJECT, "readonly");
+            const accountDecks = await dbCtx.accountDeck.all(acctId);
+            const deckIds = accountDecks.map(ad => ad.deckId);
+            const store = getObjectStore(stores.DECK, "readonly");
             const request = store.getAll();
 
             return await new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  const subjects = event.target.result;
-                  resolve(subjects.filter(subject => subjectIds.includes(subject.id)));
+                  const decks = event.target.result;
+                  resolve(decks.filter(deck => deckIds.includes(deck.id)));
                };
 
                request.onerror = function(event) {
-                  reject("Subjects not found");
+                  reject("Decks not found");
                };
             });
          } catch (error) {
@@ -879,57 +875,19 @@ const dbCtx = {
             return [];
          }
       },
-      async add(subject) {
+
+      async getAll() {
          try {
-            const store = getObjectStore(stores.SUBJECT, "readwrite");
-            const request = store.add(subject);
+            const store = getObjectStore(stores.DECK, "readonly");
+            const request = store.getAll();
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  resolve();
+                  resolve(event.target.result);
                };
 
                request.onerror = function(event) {
-                  reject("Subject not added");
-               };
-            });
-         } catch (error) {
-            console.error(error);
-         }
-      },
-      async update(subject) {
-         try {
-            const store = getObjectStore(stores.SUBJECT, "readwrite");
-            const request = store.put(new Subject(subject));
-
-            return new Promise((resolve, reject) => {
-               request.onsuccess = function(event) {
-                  resolve(true);
-               };
-
-               request.onerror = function(event) {
-                  resolve(false);
-               };
-            });
-         } catch (error) {
-            console.error(error);
-            resolve(false);
-         }
-      }
-   },
-   topic: {
-      async all(subjectId) {
-         if (!subjectId) return [];
-         try {
-            const store = getObjectStore(stores.TOPIC, "readonly");
-            const index = store.index("subjectId");
-            const request = index.getAll(subjectId);
-            return await new Promise((resolve, reject) => {
-               request.onsuccess = function(event) {
-                  resolve(event.target.result.filter(topic => !topic.deletedDate).sort((a, b) => a.title.localeCompare(b.title)));
-               };
-               request.onerror = function(event) {
-                  resolve([]);
+                  reject("Error getting all decks");
                };
             });
          } catch (error) {
@@ -937,10 +895,30 @@ const dbCtx = {
             return [];
          }
       },
-      async add(topic) {
+
+      async get(id) {
          try {
-            const store = getObjectStore(stores.TOPIC, "readwrite");
-            const request = store.add(topic);
+            const store = getObjectStore(stores.DECK, "readonly");
+            const request = store.get(id);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve(event.target.result);
+               };
+
+               request.onerror = function(event) {
+                  reject("Deck not found");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            return null;
+         }
+      },
+      async add(deck) {
+         try {
+            const store = getObjectStore(stores.DECK, "readwrite");
+            const request = store.add(deck);
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
@@ -948,17 +926,17 @@ const dbCtx = {
                };
 
                request.onerror = function(event) {
-                  reject("Topic not added");
+                  reject("Deck not added");
                };
             });
          } catch (error) {
             console.error(error);
          }
       },
-      async update(topic) {
+      async update(deck) {
          try {
-            const store = getObjectStore(stores.TOPIC, "readwrite");
-            const request = store.put(new Topic(topic));
+            const store = getObjectStore(stores.DECK, "readwrite");
+            const request = store.put(new Deck(deck));
 
             return new Promise((resolve, reject) => {
                request.onsuccess = function(event) {

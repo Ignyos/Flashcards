@@ -30,7 +30,7 @@ class AccountState {
       this.currentPage = Object.hasOwn(data, 'currentPage') ? data.currentPage : pages.FLASH_CARDS
 
       // this.currentQuizId = Object.hasOwn(data, 'currentQuizId') ? data.currentQuizId : ''
-      this.selectedSubjectId = Object.hasOwn(data, 'selectedSubjectId') ? data.selectedSubjectId : ''
+      this.selectedDeckId = Object.hasOwn(data, 'selectedDeckId') ? data.selectedDeckId : ''
 
       this.statsView = Object.hasOwn(data, 'statsView') ? data.statsView : statsViews.BY_QUESTION
       /**
@@ -41,15 +41,11 @@ class AccountState {
    }
 }
 
-class AccountSubject {
+class AccountDeck {
    constructor(data = {}) {
       // composit key
       this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
-      this.subjectId = Object.hasOwn(data, 'subjectId') ? data.subjectId : ''
-      // meta data
-      this.focusTopicIds = Object.hasOwn(data, 'focusTopicIds') ? data.focusTopicIds : []
-      this.selectedTopicId = Object.hasOwn(data, 'selectedTopicId') ? data.selectedTopicId : ''
-      this.selectedQuestion = Object.hasOwn(data, 'selectedQuestion') ? data.selectedQuestion : {}
+      this.deckId = Object.hasOwn(data, 'deckId') ? data.deckId : ''
    }
 }
 
@@ -60,10 +56,10 @@ class MetaData {
    }
 }
 
-class Question {
+class Card {
    constructor(data = {}) {
       this.id = Object.hasOwn(data, 'id') ? data.id : null
-      this.topicId = Object.hasOwn(data, 'topicId') ? data.topicId : ''
+      this.deckId = Object.hasOwn(data, 'deckId') ? data.deckId : ''
       this.shortPhrase = Object.hasOwn(data, 'shortPhrase') ? data.shortPhrase : ''
       this.phrase = Object.hasOwn(data, 'phrase') ? data.phrase : ''
       this.answer = Object.hasOwn(data, 'answer') ? data.answer : ''
@@ -98,52 +94,39 @@ class Quiz {
    }
 }
 
-class Subject {
+class Deck {
    constructor(data = {}) {
       this.id = Object.hasOwn(data, 'id') ? data.id : newId(6)
       this.title = Object.hasOwn(data, 'title') ? data.title : ''
-      this.deletedDate = Object.hasOwn(data, 'deletedDate') ? data.deletedDate : null
-   }
-}
-
-class Topic {
-   constructor(data = {}) {
-      this.id = Object.hasOwn(data, 'id') ? data.id : newId(6)
-      this.subjectId = Object.hasOwn(data, 'subjectId') ? data.subjectId : ''
-      this.title = Object.hasOwn(data, 'title') ? data.title : ''
-      this.questionCount = Object.hasOwn(data, 'questionCount') ? data.questionCount : 0
       this.deletedDate = Object.hasOwn(data, 'deletedDate') ? data.deletedDate : null
    }
 }
 
 //#region DTOs
 
-class SubjectListItem {
+class DeckListItem {
    /**
-    * Instantiates a new SubjectListItem object
-    * @param {AccountSubject} accountSubject The AccountSubject object that contains the focusTopicIds
-    * @param {Subject} subject The Subject object that contains the title and id
+    * Instantiates a new DeckListItem object
+    * @param {AccountDeck} accountDeck The AccountDeck object
+    * @param {Deck} deck The Deck object that contains the title and id
     */
-   constructor(accountSubject, subject) {
-      this.subjectId = accountSubject.subjectId
-      this.accountId = accountSubject.accountId
-      this.focusTopicIds = accountSubject.focusTopicIds
-      this.selectedTopicId = accountSubject.selectedTopicId
-      this.selectedQuestion = accountSubject.selectedQuestion
+   constructor(accountDeck, deck) {
+      this.deckId = accountDeck.deckId
+      this.accountId = accountDeck.accountId
       
-      this.title = subject.title
+      this.title = deck.title
    }
 
-   toSubject() {
-      return new Subject({id:this.subjectId, title:this.title})
+   toDeck() {
+      return new Deck({id:this.deckId, title:this.title})
    }
 }
 
-class QuestionListItem {
-   constructor(question, questionAnswer) {
-      if (!question || !questionAnswer || question.id !== questionAnswer.questionId) return
-      this.id = question.id
-      this.shortPhrase = question.shortPhrase
+class CardListItem {
+   constructor(card, questionAnswer) {
+      if (!card || !questionAnswer || card.id !== questionAnswer.questionId) return
+      this.id = card.id
+      this.shortPhrase = card.shortPhrase
       this.correct = questionAnswer.answeredCorrectly
       /**
        * @type {[boolean]} [true, false] A collection of historical answers.
@@ -152,7 +135,7 @@ class QuestionListItem {
       this.history = []
    }
    /**
-    * @returns {percent} The percentage of correct answers for this question.
+    * @returns {percent} The percentage of correct answers for this card.
     * This will always be rounded to the nearest whole number.
     */
    get score() {

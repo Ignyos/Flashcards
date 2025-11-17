@@ -285,7 +285,6 @@ background-repeat: no-repeat;
 .modal .msg {
     grid-area: msg;
     color: #FFFFFFBB;
-    border-radius: .5em;
     text-align: center;
 }
 
@@ -295,6 +294,31 @@ background-repeat: no-repeat;
     grid-template-areas: 'msg msg' 'input input'
         'ctrls ctrls';
     height: 15em;
+}
+
+.modal.deck-modal {
+    display: grid;
+    padding: 1em;
+    grid-template-areas: 'msg msg' 'input input' 'select select'
+        'ctrls ctrls';
+    grid-template-rows: 6rem 3.5rem 3.5rem 3.5rem;
+    height: 15rem;
+}
+
+.modal.deck-modal > input {
+    grid-area: input;
+}
+
+.modal.deck-modal > select {
+    grid-area: select;
+    font-size: 1.2em;
+    color: #000000bb;
+    padding: .3em;
+    margin: 0.5em 1em;
+    border-radius: .2em;
+    border: solid 1px #00000080;
+    outline: none;
+    background-color: white;
 }
 
 .modal > .ctrls {
