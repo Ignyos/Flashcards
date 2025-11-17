@@ -253,14 +253,19 @@ class StateManager {
 
       if (!this.quiz) {
          await this.loadDecks()
-         // TODO: Update quiz logic for new deck structure - no focus topics anymore
-         // For now, create quiz if we have any decks
-         if (this.decks.length === 0) {
-            messageCenter.addError('No decks available for quiz.')
+         // Check if user has any selected decks for quiz
+         const selectedDecks = this.decks.filter(deck => deck.isSelected)
+         if (selectedDecks.length === 0) {
+            messageCenter.addError('Please select at least one deck for quiz by checking the checkbox.')
             return true
          } else {
             this.quiz = await dbCtx.quiz.create(acct.id, acct.settings.defaultQuestionCount)
          }
+      }
+
+      if (!this.quiz) {
+         messageCenter.addError('No cards available for quiz in selected decks.')
+         return true
       }
 
       if (this.quiz.allQuestionIds.length === this.quiz.answeredQuestionIds.length) {
@@ -268,7 +273,7 @@ class StateManager {
          await dbCtx.quiz.update(this.quiz)
          return true;
       }
-      this.question = await dbCtx.question.get(this.getNextQuestionId())
+      this.question = await dbCtx.card.get(this.getNextQuestionId())
       return result
    }
    
@@ -277,6 +282,11 @@ class StateManager {
       this.quiz.allQuestionIds.forEach(q => {
          if (!this.quiz.answeredQuestionIds.includes(q)) unanswered.push(q)
       })
+      
+      if (unanswered.length === 0) {
+         return null // No more unanswered questions
+      }
+      
       let i = Math.floor(Math.random() * unanswered.length)
       return unanswered[i]
    }

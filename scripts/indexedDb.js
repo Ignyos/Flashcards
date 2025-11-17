@@ -670,24 +670,25 @@ const dbCtx = {
       async create(acctId, questionCount) {
          try {
             const result = new Quiz({ accountId: acctId });
-            const focusTopicIds = await this.focusTopicIds(acctId);
-            const questionIds = await this.questionIds(focusTopicIds);
-            const answeredQuestions = await this.answeredQuestions(acctId, questionIds);
-            const unansweredQuestionIds = this.unansweredQuestionIds(questionIds, answeredQuestions);
+            const focusDeckIds = await this.focusDeckIds(acctId);
+            const cardIds = await this.cardIds(focusDeckIds);
+            const answeredCards = await this.answeredCards(acctId, cardIds);
+            const unansweredCardIds = this.unansweredCardIds(cardIds, answeredCards);
 
-            let quizQuestionIds;
-            if (unansweredQuestionIds.length > questionCount - 1) {
-               quizQuestionIds = getRandomNElements(unansweredQuestionIds, questionCount);
+            let quizCardIds;
+            if (unansweredCardIds.length > questionCount - 1) {
+               quizCardIds = getRandomNElements(unansweredCardIds, questionCount);
             } else {
-               const n = questionCount - unansweredQuestionIds.length;
-               const questionIdsInMostNeedOfStudy = this.questionIdsInMostNeedOfStudy(n, answeredQuestions);
-               quizQuestionIds = unansweredQuestionIds.concat(questionIdsInMostNeedOfStudy);
+               const n = questionCount - unansweredCardIds.length;
+               const cardIdsInMostNeedOfStudy = this.cardIdsInMostNeedOfStudy(n, answeredCards);
+               quizCardIds = unansweredCardIds.concat(cardIdsInMostNeedOfStudy);
             }
 
-            if (quizQuestionIds.length === 0) {
+            if (quizCardIds.length === 0) {
                return false;
             } else {
-               result.allQuestionIds = quizQuestionIds;
+               // Store as allQuestionIds for backward compatibility
+               result.allQuestionIds = quizCardIds;
                await this.add(result);
                return result;
             }
@@ -696,34 +697,36 @@ const dbCtx = {
             return false;
          }
       },
-      async focusTopicIds(acctId) {
+      async focusDeckIds(acctId) {
          try {
-            const accountSubjects = await dbCtx.accountSubject.all(acctId);
-            // combine all the focusTopicIds from the accountSubjects
-            return accountSubjects.reduce((acc, curr) => acc.concat(curr.focusTopicIds), []);
+            const accountDecks = await dbCtx.accountDeck.list(acctId);
+            // Get selected deck IDs from accountDecks where isSelected = true
+            return accountDecks
+               .filter(accountDeck => accountDeck.isSelected)
+               .map(accountDeck => accountDeck.deckId);
          } catch (error) {
             console.error(error);
             return [];
          }
       },
-      async questionIds(focusTopicIds) {
+      async cardIds(focusDeckIds) {
          try {
-            const store = getObjectStore(stores.QUESTION, "readonly");
+            const store = getObjectStore(stores.CARD, "readonly");
             const request = store.getAll();
 
             return await new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  const questions = event.target.result;
-                  resolve(questions
-                     .filter(question => focusTopicIds
-                        .includes(question.topicId) 
-                        && question.deletedDate === null)
-                     .map(question => question.id)
+                  const cards = event.target.result;
+                  resolve(cards
+                     .filter(card => focusDeckIds
+                        .includes(card.deckId) 
+                        && !card.deletedDate)
+                     .map(card => card.id)
                   );
                };
 
                request.onerror = function(event) {
-                  reject("Questions not found");
+                  reject("Cards not found");
                };
             });
          } catch (error) {
@@ -731,7 +734,7 @@ const dbCtx = {
             return [];
          }
       },
-      async answeredQuestions(acctId, questionIds) {
+      async answeredCards(acctId, cardIds) {
          try {
          const store = getObjectStore(stores.QUESTION_ANSWER, "readonly");
          const index = store.index("compsiteIndex");
@@ -744,7 +747,8 @@ const dbCtx = {
                   const cursor = event.target.result;
                   if (cursor) {
                      const answer = cursor.value;
-                     if (answer.accountId === acctId && questionIds.includes(answer.questionId)) {
+                     // Note: keeping questionId field name for backward compatibility with existing quiz data
+                     if (answer.accountId === acctId && cardIds.includes(answer.questionId)) {
                         answers.push(answer);
                      }
                      cursor.continue();
@@ -762,21 +766,21 @@ const dbCtx = {
             return [];
          }
       },
-      unansweredQuestionIds(questionIds, answeredQuestions) {
-         return questionIds
-            .filter(questionId => !answeredQuestions
-               .some(answer => answer.questionId === questionId));
+      unansweredCardIds(cardIds, answeredCards) {
+         return cardIds
+            .filter(cardId => !answeredCards
+               .some(answer => answer.questionId === cardId));
       },
-      questionIdsInMostNeedOfStudy(count, answeredQuestions) {
-         if (answeredQuestions.length === 0) { return []; }
-         answeredQuestions.sort((a, b) => {
+      cardIdsInMostNeedOfStudy(count, answeredCards) {
+         if (answeredCards.length === 0) { return []; }
+         answeredCards.sort((a, b) => {
             return a.id.localeCompare(b.id);
          });
-         const distinctQuestionIds = [...new Set(answeredQuestions.map(answer => answer.questionId))];
+         const distinctCardIds = [...new Set(answeredCards.map(answer => answer.questionId))];
          let stackRank = [];// two dimentiional array
-         distinctQuestionIds.forEach(questionId => {
-            const answers = answeredQuestions.filter(answer => answer.questionId === questionId);
-            stackRank.push([questionId, this.getWeight(answers)]);
+         distinctCardIds.forEach(cardId => {
+            const answers = answeredCards.filter(answer => answer.questionId === cardId);
+            stackRank.push([cardId, this.getWeight(answers)]);
          });
          let sorted = stackRank.sort((a, b) => {
             return a[1] - b[1];
@@ -865,12 +869,12 @@ const dbCtx = {
          }
       },
       /**
-       * Finds all the QuestionAnswers for the given account id and quiz id. Then finds all the questions
-       * based on the question ids from the QuestionAnswers. Then creates a QuestionListItem object for each
-       * question and answer. Then returns the collection of QuestionListItem objects.
+       * Finds all the QuestionAnswers for the given account id and quiz id. Then finds all the cards
+       * based on the question ids from the QuestionAnswers. Then creates a CardListItem object for each
+       * card and answer. Then returns the collection of CardListItem objects.
        * @param {string} accountId 
        * @param {string} quizId 
-       * @returns {QuestionListItem[]}
+       * @returns {CardListItem[]}
        */
       async results(accountId, quizId) {
          try {
@@ -882,10 +886,10 @@ const dbCtx = {
                request.onsuccess = async function(event) {
                   const answers = event.target.result;
                   const questionIds = answers.map(answer => answer.questionId);
-                  const questions = await dbCtx.question.byIdArray(questionIds);
-                  const results = questions.map(question => {
-                     const answer = answers.find(answer => answer.questionId === question.id);
-                     return new QuestionListItem(question, answer);
+                  const cards = await dbCtx.card.byIdArray(questionIds);
+                  const results = cards.map(card => {
+                     const answer = answers.find(answer => answer.questionId === card.id);
+                     return new CardListItem(card, answer);
                   });
                   resolve(results);
                };

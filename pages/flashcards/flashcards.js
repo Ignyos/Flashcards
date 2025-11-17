@@ -1471,7 +1471,7 @@ navigation = {
 
    get quizBtnEnabled() {
       const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
-      const hasCards = stateMgr.cards && stateMgr.cards.length > 0
-      return !isQuizPage && hasCards
+      const hasSelectedDecks = stateMgr.decks && stateMgr.decks.some(deck => deck.isSelected)
+      return !isQuizPage && hasSelectedDecks
    }
 }

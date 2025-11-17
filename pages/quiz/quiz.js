@@ -59,7 +59,13 @@ page = {
    async loadNextQuestion() {
       let q = document.getElementById('question')
       let id = stateMgr.getNextQuestionId()
-      stateMgr.question = await dbCtx.question.get(id)
+      
+      if (!id) {
+         q.innerText = 'Quiz complete! No more questions.'
+         return
+      }
+      
+      stateMgr.question = await dbCtx.card.get(id)
       q.innerText = stateMgr.question.phrase
    },
 
