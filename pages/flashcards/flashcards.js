@@ -96,7 +96,6 @@ page = {
          stateMgr.isEditingDeck = false
       }
       document.getElementById('site-header').classList.add('blur')
-      document.getElementById('nav').classList.add('blur')
       app.formModal('modal-bg', this.getDeckModal())
    },
 
@@ -141,7 +140,6 @@ page = {
          stateMgr.card = new Card()
       }
       document.getElementById('site-header').classList.add('blur')
-      document.getElementById('nav').classList.add('blur')
       app.formModal('question-modal-bg', this.getCardModal())
    },
 
@@ -249,7 +247,6 @@ page = {
             // Close the modal and refresh
             this.refreshTabs()
             document.getElementById('site-header').classList.remove('blur')
-            document.getElementById('nav').classList.remove('blur')
             app.hideModal()
          }
       } catch (error) {
@@ -272,7 +269,6 @@ page = {
       cancel.classList.add('cancel')
       cancel.addEventListener('click', () => {
          document.getElementById('site-header').classList.remove('blur')
-         document.getElementById('nav').classList.remove('blur')
          app.hideModal()
       })
 
@@ -329,7 +325,6 @@ page = {
 
       this.refreshTabs()
       document.getElementById('site-header').classList.remove('blur')
-      document.getElementById('nav').classList.remove('blur')
       app.hideModal()
    },
 
@@ -348,7 +343,6 @@ page = {
       cancel.classList.add('cancel')
       cancel.addEventListener('click', () => {
          document.getElementById('site-header').classList.remove('blur')
-         document.getElementById('nav').classList.remove('blur')
          app.hideModal()
       })
 
@@ -395,7 +389,6 @@ page = {
 
       this.refreshTabs()
       document.getElementById('site-header').classList.remove('blur')
-      document.getElementById('nav').classList.remove('blur')
       app.hideModal()
    },
 
@@ -744,17 +737,6 @@ page = {
       return ele
    },
 
-   async initNav() {
-      // if (!stateMgr.account) return
-      // if (stateMgr.account.state.currentPage == pages.HOME) return 
-      // if (stateMgr.account.state.currentPage == pages.STATS) return 
-      let nav = document.getElementById('nav')
-      if (nav) nav.remove()
-      let page = document.getElementById('page')
-      page.appendChild(navigation.element)
-      // document.body.appendChild(navigation.element)
-   },
-
    //#region Subject Pane
 
    async refreshSubjectPane() {
@@ -1087,7 +1069,6 @@ page = {
          ele.addEventListener('click', async (event) => {
             event.stopImmediatePropagation()
             await stateMgr.toggleFocusTopic(topic.id)
-            await this.initNav()
             await this.refreshSubjectPane()
             await this.refreshTopicPane()
          })
@@ -1321,7 +1302,6 @@ page = {
    async showQuestionModal()
    {
       document.getElementById('site-header').classList.add('blur')
-      document.getElementById('nav').classList.add('blur')
       app.formModal('question-modal-bg', this.getQuestionModal())
    },
 
@@ -1371,7 +1351,6 @@ page = {
       cancel.classList.add('cancel')
       cancel.addEventListener('click', () => {
          document.getElementById('site-header').classList.remove('blur')
-         document.getElementById('nav').classList.remove('blur')
          app.hideModal()
       })
 
@@ -1396,7 +1375,6 @@ page = {
          }
          await this.refreshQuestionPane()
          document.getElementById('site-header').classList.remove('blur')
-         document.getElementById('nav').classList.remove('blur')
          app.hideModal()
       }
    },
