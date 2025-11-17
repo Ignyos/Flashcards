@@ -234,7 +234,16 @@ class SiteHeader {
       let e = document.createElement('div')
       e.id = 'site-header'
       e.appendChild(await this.getMenuButton())
-      e.appendChild(document.createElement('div'))
+      
+      // Add Quiz Me! button if on flashcards page
+      if (stateMgr.account?.state?.currentPage === pages.FLASH_CARDS) {
+         e.appendChild(this.getQuizMeButton())
+         e.classList.add('four-column')
+      } else {
+         e.classList.add('three-column')
+      }
+      
+      e.appendChild(document.createElement('div')) // spacer
       e.appendChild(this.acctName)
       return e
    }
@@ -261,6 +270,26 @@ class SiteHeader {
       if (menu) { menu.remove() }
       let subMenu = document.querySelector('.sub-menu')
       if (subMenu) { subMenu.remove() }
+   }
+
+   getQuizMeButton() {
+      const enabled = this.quizBtnEnabled
+      let ele = getNavItemPill("Quiz Me!", enabled)
+      ele.id = 'create-quiz'
+      if (enabled) {
+         ele.addEventListener('click', async () => {
+            await stateMgr.createNewQuiz()
+            await stateMgr.setPage(pages.QUIZ)
+            await app.route()
+         })
+      }
+      return ele
+   }
+
+   get quizBtnEnabled() {
+      const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
+      const hasSelectedDecks = stateMgr.decks && stateMgr.decks.some(deck => deck.isSelected)
+      return !isQuizPage && hasSelectedDecks
    }
 
    async displayMenu() {

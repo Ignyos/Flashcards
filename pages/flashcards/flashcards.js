@@ -14,7 +14,6 @@ page = {
    get element() {
       let ele = document.createElement('div')
       ele.id = 'page'
-      ele.appendChild(navigation.element)
       let panes = document.createElement('div')
       panes.id = 'panes'
       panes.appendChild(this.tabHeader)
@@ -1443,35 +1442,4 @@ page = {
 
       return ele
    },
-}
-
-navigation = {
-   get element() {
-      let n = document.getElementById('nav')
-      if (n) n.remove()
-      n = document.createElement('div')
-      n.id = 'nav'
-      n.appendChild(this.quizBtn)
-      return n
-   },
-
-   get quizBtn() {
-      const enabled = this.quizBtnEnabled
-      let ele = getNavItemPill("Quiz Me!", enabled)
-      ele.id = 'create-quiz'
-      if (enabled) {
-         ele.addEventListener('click', async () => {
-            await stateMgr.createNewQuiz()
-            await stateMgr.setPage(pages.QUIZ)
-            await app.route()
-         })
-      }
-      return ele
-   },
-
-   get quizBtnEnabled() {
-      const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
-      const hasSelectedDecks = stateMgr.decks && stateMgr.decks.some(deck => deck.isSelected)
-      return !isQuizPage && hasSelectedDecks
-   }
 }
