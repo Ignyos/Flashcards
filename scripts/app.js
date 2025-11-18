@@ -105,6 +105,7 @@ class App {
       result[pages.FLASH_CARDS] = 0;
       result[pages.QUIZ] = 0;
       result[pages.STATS] = 0;
+      result[pages.STUDENTS] = 0;
       return result
    }
 
@@ -321,6 +322,11 @@ class SiteHeader {
       let acctSubMenu = false
       if (enabled) acctSubMenu = await this.getAcctSubMenu()
       ul.appendChild(this.getMenuItem("Switch Student" , acctSubMenu, enabled))
+
+      enabled = stateMgr.accounts?.length > 0 && stateMgr.account?.state?.currentPage != pages.QUIZ && stateMgr.account?.state?.currentPage != pages.STUDENTS
+      let manageStudents = this.getMenuItem("Manage Students", false, enabled)
+      if (enabled) this.addPageSwitcher(manageStudents, pages.STUDENTS)
+      ul.appendChild(manageStudents)
 
       ul.appendChild(document.createElement('hr'))
       

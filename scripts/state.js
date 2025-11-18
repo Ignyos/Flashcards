@@ -2,7 +2,8 @@ const pages = {
    HOME: "home",
    FLASH_CARDS: "flashcards",
    QUIZ: "quiz",
-   STATS: "stats"
+   STATS: "stats",
+   STUDENTS: "students",
 }
 
 class StateManager {
@@ -51,6 +52,13 @@ class StateManager {
       if (!acct) return
       acct.lastUsed = new Date().toISOString()
       await dbCtx.account.update(acct)
+   }
+
+   async loadAccount() {
+      this.accounts = await dbCtx.account.all()
+      if (this.metaData.selectedAccountId) {
+         await this.updateAccountLastUsed()
+      }
    }
 
    async setPage(page) {
@@ -324,7 +332,7 @@ class StateManager {
             this.quizes = await dbCtx.quiz.byAccountId(this.account.id)
             break
          default:
-            messageCenter.addError('Error loading Stats.')
+            messageCenter.addInfo('Stats page under construction.')
             break
       }
 

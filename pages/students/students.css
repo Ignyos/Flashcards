@@ -1,0 +1,223 @@
+/* Students Page Styles */
+
+#page h1 {
+   text-align: center;
+   margin: 1rem 0 2rem 0;
+   color: #fff;
+}
+
+#student-list {
+   display: flex;
+   flex-direction: column;
+   gap: 0;
+   max-width: 800px;
+   margin: 0 auto;
+   padding: 0 1rem;
+}
+
+/* Student List Item Styles - Follow deck/card patterns */
+#student-list .item,
+#student-list .item-selected {
+   display: grid;
+   grid-template-columns: 2rem 1fr auto;
+   align-items: center;
+   padding: 0.75rem;
+   margin: 0;
+   background: rgba(255, 255, 255, 0.05);
+   border: 1px solid rgba(255, 255, 255, 0.1);
+   border-radius: 0.5rem;
+   margin-bottom: 0.5rem;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   position: relative;
+}
+
+#student-list .item:hover {
+   background: rgba(255, 255, 255, 0.08);
+   border-color: rgba(255, 255, 255, 0.2);
+}
+
+#student-list .item-selected {
+   background: rgba(70, 163, 255, 0.1);
+   border-color: rgba(70, 163, 255, 0.5);
+   cursor: default;
+}
+
+#student-list .item-editing {
+   display: grid;
+   grid-template-columns: 2rem 1fr auto auto;
+   align-items: center;
+   padding: 0.75rem;
+   margin: 0;
+   background: rgba(255, 255, 255, 0.08);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   border-radius: 0.5rem;
+   margin-bottom: 0.5rem;
+}
+
+/* Accordion Toggle Button */
+.accordion-toggle {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 1.5rem;
+   height: 1.5rem;
+   border-radius: 0.25rem;
+   background: rgba(255, 255, 255, 0.1);
+   color: #fff;
+   font-size: 0.75rem;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   -webkit-user-select: none;
+   user-select: none;
+}
+
+.accordion-toggle:hover:not(.disabled) {
+   background: rgba(255, 255, 255, 0.2);
+}
+
+.accordion-toggle.disabled {
+   background: rgba(255, 255, 255, 0.05);
+   color: rgba(255, 255, 255, 0.3);
+   cursor: default;
+}
+
+/* Student Name */
+.student-name {
+   color: #fff;
+   font-weight: 500;
+   padding-left: 0.75rem;
+}
+
+/* Actions Container */
+.actions {
+   display: flex;
+   gap: 0.5rem;
+   align-items: center;
+}
+
+/* Edit and Delete Buttons - Reuse existing styles */
+#student-list .item-selected .edit,
+#student-list .item-selected .trash {
+   width: 1.5rem;
+   height: 1.5rem;
+   background-size: contain;
+   cursor: pointer;
+   transition: opacity 0.2s ease;
+}
+
+#student-list .item-selected .edit {
+   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>');
+}
+
+#student-list .item-selected .trash {
+   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18l-2 13H5L3 6z"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>');
+}
+
+#student-list .item-selected .edit:hover,
+#student-list .item-selected .trash:hover {
+   opacity: 0.7;
+}
+
+/* Edit Input */
+#student-list .item-editing .edit-student {
+   background: rgba(0, 0, 0, 0.3);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   border-radius: 0.25rem;
+   color: #fff;
+   padding: 0.5rem;
+   font-size: 1rem;
+   outline: none;
+   margin-left: 0.75rem;
+}
+
+#student-list .item-editing .edit-student:focus {
+   border-color: rgba(70, 163, 255, 0.5);
+}
+
+#student-list .item-editing .edit-student::placeholder {
+   color: rgba(255, 255, 255, 0.5);
+}
+
+/* Save Button */
+#student-list .item-editing .btn {
+   width: 1.5rem;
+   height: 1.5rem;
+   background-size: contain;
+   cursor: pointer;
+   transition: opacity 0.2s ease;
+}
+
+#student-list .item-editing .btn.check {
+   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20,6 9,17 4,12"/></svg>');
+}
+
+#student-list .item-editing .btn:hover {
+   opacity: 0.7;
+}
+
+/* Student Details (Accordion Content) */
+.student-details {
+   grid-column: 1 / -1;
+   padding: 1rem 0 0 0;
+   color: rgba(255, 255, 255, 0.8);
+   font-size: 0.9rem;
+   line-height: 1.5;
+   border-top: 1px solid rgba(255, 255, 255, 0.1);
+   margin-top: 0.75rem;
+   overflow: hidden;
+   transition: all 0.3s ease;
+}
+
+.student-details.hidden {
+   max-height: 0;
+   padding: 0;
+   margin-top: 0;
+   border-top: none;
+   opacity: 0;
+}
+
+.student-details.expanded {
+   max-height: 200px;
+   opacity: 1;
+}
+
+.student-details div {
+   margin-bottom: 0.5rem;
+}
+
+.student-details strong {
+   color: #fff;
+   margin-right: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+   #student-list {
+      padding: 0 0.5rem;
+   }
+   
+   #student-list .item,
+   #student-list .item-selected,
+   #student-list .item-editing {
+      padding: 0.5rem;
+   }
+   
+   .student-name {
+      padding-left: 0.5rem;
+      font-size: 0.9rem;
+   }
+   
+   .accordion-toggle {
+      width: 1.25rem;
+      height: 1.25rem;
+      font-size: 0.7rem;
+   }
+   
+   #student-list .item-selected .edit,
+   #student-list .item-selected .trash,
+   #student-list .item-editing .btn {
+      width: 1.25rem;
+      height: 1.25rem;
+   }
+}
