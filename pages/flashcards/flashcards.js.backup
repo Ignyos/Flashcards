@@ -739,6 +739,69 @@ page = {
 
    //#region Subject Pane
 
+   get subjectPane() {
+      let ele = document.createElement('div')
+      ele.id = 'subject-pane'
+      ele.classList.add('pane')
+      ele.appendChild(this.getPaneHeader('S U B J E C T'))
+      ele.appendChild(this.subjectPaneControls)
+      ele.appendChild(this.subjectList)
+      return ele
+   },
+
+   get subjectPaneControls() {
+      let ele = document.createElement('div')
+      ele.classList.add('controls')
+      ele.appendChild(this.newSubjectControl)
+      return ele
+   },
+
+   get newSubjectControl() {
+      let ele = document.createElement('div')
+      ele.id = 'new-subject-control'
+      ele.appendChild(this.newSubjectInput)
+      ele.appendChild(this.newSubjectButton)
+      return ele
+   },
+
+   get newSubjectInput() {
+      let input = document.createElement('input')
+      input.type = 'text'
+      input.placeholder = 'New Subject'
+      input.spellcheck = false
+      input.id = 'new-subject'
+      input.classList.add('new-subject')
+      input.addEventListener('keyup',async (event) => {
+         if (event.key == 'Enter') {
+            await this.createNewSubject()
+         } else if (event.key == 'Escape') {
+            document.getElementById('new-subject').value = ''
+         }
+      })
+      return input
+   },
+
+   get newSubjectButton() {
+      let btn = document.createElement('div')
+      btn.classList.add('btn')
+      btn.classList.add('plus')
+      btn.addEventListener('click', async () => {
+         await this.createNewSubject()
+      })
+      return btn
+   },
+
+   async createNewSubject() {
+      let val = document.getElementById('new-subject').value.trim()
+      if (val == '') return
+      let newSubject = new Subject({title: val})
+      let newAcctSub = new AccountSubject({accountId: stateMgr.account.id, subjectId: newSubject.id})
+      let subListItem = new SubjectListItem(newAcctSub,newSubject)
+      await dbCtx.subject.add(newSubject)
+      await dbCtx.accountSubject.add(newAcctSub)
+      await stateMgr.addNewAccountSubject(subListItem)
+   },
+
    get subjectList() {
       let ele = document.createElement('div')
       ele.id = 'subject-list'
