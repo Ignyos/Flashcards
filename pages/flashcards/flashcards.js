@@ -58,7 +58,12 @@ page = {
       let addBtn = document.createElement('div')
       addBtn.classList.add('tab-add-btn')
       addBtn.textContent = '+'
-      
+      if (tabId === 'decks') {
+         addBtn.id = 'add-deck-btn'
+      } else if (tabId === 'cards') {
+         addBtn.id = 'add-card-btn'
+      }
+
       // Add click handlers
       button.addEventListener('click', (e) => {
          if (!button.classList.contains('disabled') && e.target !== addBtn) {
@@ -70,6 +75,8 @@ page = {
          e.stopPropagation()
          if (!button.classList.contains('disabled')) {
             this.handleAddClick(tabId)
+            // remove attention class on add button
+            addBtn.classList.remove('attention')
          }
       })
 
@@ -429,6 +436,8 @@ page = {
 
    switchTab(tabId) {
       this.currentTab = tabId
+      document.getElementById('add-deck-btn')?.classList.remove('attention')
+      document.getElementById('add-card-btn')?.classList.remove('attention')
       this.refreshTabs()
    },
 
@@ -528,6 +537,8 @@ page = {
          ele.classList.add('no-items')
          ele.innerText = 'Add a deck to get started.'
          container.appendChild(ele)
+         
+         document.getElementById('add-deck-btn')?.classList.add('attention')
       }
    },
 
@@ -600,6 +611,7 @@ page = {
       ele.appendChild(checkbox)
       
       ele.appendChild(this.getEditDeckInput(deck))
+      ele.appendChild(document.createElement('div')) // Placeholder for alignment
       ele.appendChild(this.getEditDeckButton(deck))
       return ele
    },
@@ -689,6 +701,8 @@ page = {
          ele.classList.add('no-items')
          ele.innerText = 'No cards in this deck.'
          container.appendChild(ele)
+         
+         document.getElementById('add-card-btn')?.classList.add('attention')
       }
    },
 
@@ -738,128 +752,4 @@ page = {
    },
 
    //#endregion
-
-   //#region Question Modal
-
-   async showQuestionModal()
-   {
-      document.getElementById('site-header').classList.add('blur')
-      app.formModal('question-modal-bg', this.getQuestionModal())
-   },
-
-   getQuestionModal() {
-      let sp = document.createElement('input')
-      sp.id = 'short-phrase'
-      sp.type = 'text'
-      sp.value = stateMgr.question.shortPhrase
-
-      let ph = document.createElement('textarea')
-      ph.id = 'phrase'
-      ph.placeholder = 'Enter the full phrasing of the question here.'
-      ph.rows = 5
-      ph.innerText = stateMgr.question.phrase ?? ''
-
-      let an = document.createElement('textarea')
-      an.id = 'answer'
-      an.placeholder = 'Enter the answer to the question here.'
-      an.innerText = stateMgr.question.answer ?? ''
-
-      let frm = document.createElement('div')
-      frm.classList.add('question-form')
-      frm.appendChild(sp)
-      frm.appendChild(ph)
-      frm.appendChild(an)
-      frm.appendChild(this.questionControls)
-
-      let ele = document.createElement('div')
-      ele.classList.add('question-modal')
-      ele.appendChild(frm)
-      return ele
-   },
-
-   get questionControls() {
-      let save = document.createElement('div')
-      save.innerText = "SAVE"
-      save.classList.add('btn')
-      save.classList.add('save')
-      save.addEventListener('click', async () => {
-         await this.saveQuestion()
-         await this.refreshTopicPane()
-      })
-
-      let cancel = document.createElement('div')
-      cancel.innerText = "CANCEL"
-      cancel.classList.add('btn')
-      cancel.classList.add('cancel')
-      cancel.addEventListener('click', () => {
-         document.getElementById('site-header').classList.remove('blur')
-         app.hideModal()
-      })
-
-      let ele = document.createElement('div')
-      ele.classList.add('question-controls')
-      ele.appendChild(save)
-      ele.appendChild(cancel)
-      return ele
-   },
-
-   async saveQuestion() {
-      let form = this.questionForm
-      if (form.isValid())
-      {
-         if (stateMgr.question.isNew) {
-            let newQuestion = new Question(form)
-            newQuestion.id = await newQuestionId()
-            await stateMgr.addQuestion(newQuestion)
-         } else {
-            let updatedQuestion = new Question(form)
-            await stateMgr.updateQuestion(updatedQuestion)
-         }
-         await this.refreshQuestionPane()
-         document.getElementById('site-header').classList.remove('blur')
-         app.hideModal()
-      }
-   },
-
-   get questionForm() {
-      let shortPhrase = document.getElementById('short-phrase')?.value.trim()
-      let phrase = document.getElementById('phrase')?.value.trim()
-      let answer = document.getElementById('answer')?.value.trim()
-
-      let isValid = () => {
-         let result = true
-         if (shortPhrase == '') {
-            result = false
-            messageCenter.addError('A short phrasing of the question is required.')
-         }
-         if (phrase == '') {
-            result = false
-            messageCenter.addError('The full phrasing of the question is required.')
-         }
-         if (answer == '') {
-            result = false
-            messageCenter.addError('The answer to the question is required.')
-         }
-         return result
-      }
-
-      return {
-         'id': stateMgr.question.id,
-         'topicId': stateMgr.topicId,
-         'shortPhrase': shortPhrase,
-         'phrase': phrase,
-         'answer': answer,
-         'isValid': isValid
-      }
-   },
-
-   //#endregion
-
-   getPaneHeader(name) {
-      let ele = document.createElement('div')
-      ele.classList.add('header')
-      ele.innerText = name
-
-      return ele
-   },
 }

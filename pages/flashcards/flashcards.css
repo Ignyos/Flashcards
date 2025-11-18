@@ -34,18 +34,6 @@
    padding: 6px 6px 0 6px;
 }
 
-#page .pane {
-   background: rgba(255, 255, 255, .03);
-   border-top-left-radius: 1rem;
-   border-top-right-radius: 1rem;
-   border-bottom: none;
-}
-
-.pane .header {
-   height: 24px;
-   text-align: center;
-}
-
 @keyframes btn-new-hover {
    from {
       background-color: rgba(255, 255, 255, .1);
@@ -146,6 +134,16 @@
 
 /*#endregion*/
 
+.no-items {
+   margin: 1rem;
+   font-size: 1.2rem;
+}
+
+.attention {
+   animation: btn-new-hover .6s infinite;
+   animation-direction: alternate;
+}
+
 /*#region Deck List */
 
 #deck-list {
@@ -161,9 +159,20 @@
    color: rgb(92 173 255);
 }
 
-#deck-list , .item , .item-selected , .item-editing {
+#deck-list , .item , .item-selected {
    display: grid;
    grid-template-columns: auto auto 1fr 2rem 2rem;
+   font-size: 1.25rem;
+   border-left: solid 1px transparent;
+   padding-left: .3rem;
+   cursor: pointer;
+   padding: 6px 0 6px 7px;
+   gap: 8px;
+}
+
+.item-editing {
+   display: grid;
+   grid-template-columns: auto auto 1fr 2rem;
    font-size: 1.25rem;
    border-left: solid 1px transparent;
    padding-left: .3rem;

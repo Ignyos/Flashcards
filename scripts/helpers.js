@@ -22,15 +22,15 @@ getRandomNElements = (arr, n) => {
    return result;
 }
 
-async function newQuestionId() {
+async function newCardId() {
    let i = 0
    let id = newId(6)
-   while (await dbCtx.question.exists(id) && i < 10) {
+   while (await dbCtx.card.exists(id) && i < 10) {
       id = newId(6)
       i++
    }
    if (i >= 10) {
-      messageCenter.addError("Unable to create a new question id")
+      messageCenter.addError("Unable to create a new card id")
    }
    return id
 }
