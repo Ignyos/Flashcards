@@ -9,10 +9,19 @@ const stores = {
 }
 
 let db;
-const request = indexedDB.open("ignyos.flashcards", 3);
+const request = indexedDB.open("ignyos.flashcards", 2);
 
 request.onupgradeneeded = function(event) {
    db = event.target.result;
+   const oldVersion = event.oldVersion;
+
+   // Migration: Drop entire database if version is less than 2
+   if (oldVersion < 2 && oldVersion > 0) {
+      // Delete all existing object stores (cleaner than iterating)
+      for (const storeName of db.objectStoreNames) {
+         db.deleteObjectStore(storeName);
+      }
+   }
 
    const accountStore = db.createObjectStore(stores.ACCOUNT, { keyPath: "id" });
    accountStore.createIndex("name", "name", { unique: true });
