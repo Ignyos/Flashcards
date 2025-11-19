@@ -1,5 +1,6 @@
 page = {
    selectedStudentId: null,
+   students: [], // Store students data locally
 
    get element() {
       let ele = document.createElement('div')
@@ -21,14 +22,14 @@ page = {
    },
 
    async loadStudents() {
-      const students = await dbCtx.account.all()
+      this.students = await dbCtx.account.all()
       // Sort alphabetically by name
-      students.sort((a, b) => a.name.localeCompare(b.name))
+      this.students.sort((a, b) => a.name.localeCompare(b.name))
       
       const container = document.getElementById('student-list')
       container.innerHTML = ''
       
-      students.forEach(student => {
+      this.students.forEach(student => {
          container.appendChild(this.studentListItem(student))
       })
    },
@@ -189,7 +190,7 @@ page = {
    showDeleteStudentConfirm(student) {
       app.confirm(async () => {
          await this.deleteStudent(student)
-      }, `Are you sure you want to delete student "${student.name}"? This will remove all their decks, cards, and quiz history.`)
+      }, `Delete student "${student.name}"? This will remove their quiz history and progress data.`)
    },
 
    async deleteStudent(student) {
@@ -232,19 +233,13 @@ page = {
          // Delete quiz history
          const quizzes = await dbCtx.quiz.byAccountId(accountId)
          for (const quiz of quizzes) {
-            // Note: If delete method doesn't exist, we'll skip for now
-            if (dbCtx.quiz.delete) {
-               await dbCtx.quiz.delete(quiz.id)
-            }
+            await dbCtx.quiz.delete(quiz.id)
          }
          
          // Delete question answers
          const questionAnswers = await dbCtx.questionAnswer.byAccountId(accountId, '1970-01-01T00:00:00.000Z')
          for (const qa of questionAnswers) {
-            // Note: If delete method doesn't exist, we'll skip for now
-            if (dbCtx.questionAnswer.delete) {
-               await dbCtx.questionAnswer.delete(qa.id)
-            }
+            await dbCtx.questionAnswer.delete(qa.id)
          }
          
          // Delete account decks
@@ -276,7 +271,8 @@ page = {
          
          // Add action buttons
          const actions = studentElement.querySelector('.actions')
-         const student = stateMgr.accounts.find(a => a.id === studentId)
+         const student = this.students.find(a => a.id === studentId)
+         
          if (actions && student) {
             actions.appendChild(this.editStudentBtn(student))
             actions.appendChild(this.deleteStudentBtn(student))
@@ -296,6 +292,9 @@ page = {
             details.classList.remove('hidden')
             details.classList.add('expanded')
             toggle.innerHTML = '▼' // Down arrow for expanded
+            
+            // Select the student when expanding accordion
+            this.selectStudent(studentId)
          } else {
             // Collapse
             details.classList.remove('expanded')

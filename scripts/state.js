@@ -86,6 +86,9 @@ class StateManager {
          case pages.STATS:
             await this.loadStatsPage()
             break
+         case pages.STUDENTS:
+            // Students page handles its own loading
+            break
          default:
             break
       }      

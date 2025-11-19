@@ -614,6 +614,24 @@ const dbCtx = {
          } catch (error) {
             console.error(error);
          }
+      },
+      async delete(answerId) {
+         try {
+            const store = getObjectStore(stores.QUESTION_ANSWER, "readwrite");
+            const request = store.delete(answerId);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Answer not deleted");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+         }
       }
    },
    quiz: {
@@ -910,6 +928,24 @@ const dbCtx = {
          } catch (error) {
             console.error(error);
             return [];
+         }
+      },
+      async delete(quizId) {
+         try {
+            const store = getObjectStore(stores.QUIZ, "readwrite");
+            const request = store.delete(quizId);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Quiz not deleted");
+               };
+            });
+         } catch (error) {
+            console.error(error);
          }
       }
    },

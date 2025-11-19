@@ -287,7 +287,7 @@ background-repeat: no-repeat;
     grid-template-areas: 'msg msg'
         'ctrls ctrls';
     grid-template-rows: 1fr 3em;
-    height: 10em;
+    height: fit-content;
     padding-top: 1em;
 }
 

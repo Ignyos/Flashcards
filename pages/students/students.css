@@ -1,5 +1,15 @@
 /* Students Page Styles */
 
+/* Fix confirmation modal width for delete student dialog */
+.modal.confirm .msg {
+  max-width: 350px;
+  word-wrap: break-word;
+  white-space: normal;
+  line-height: 1.5;
+  margin: 0 auto;
+  padding: 0 1rem 1rem 1rem;
+}
+
 #page h1 {
    text-align: center;
    margin: 1rem 0 2rem 0;
@@ -96,22 +106,14 @@
    align-items: center;
 }
 
-/* Edit and Delete Buttons - Reuse existing styles */
+/* Edit and Delete Buttons - Reuse existing global styles */
 #student-list .item-selected .edit,
 #student-list .item-selected .trash {
    width: 1.5rem;
    height: 1.5rem;
-   background-size: contain;
+   /* Inherit background-image from global site.css */
    cursor: pointer;
    transition: opacity 0.2s ease;
-}
-
-#student-list .item-selected .edit {
-   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>');
-}
-
-#student-list .item-selected .trash {
-   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 6h18l-2 13H5L3 6z"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>');
 }
 
 #student-list .item-selected .edit:hover,
@@ -139,17 +141,13 @@
    color: rgba(255, 255, 255, 0.5);
 }
 
-/* Save Button */
+/* Save Button - Reuse existing global styles */
 #student-list .item-editing .btn {
    width: 1.5rem;
    height: 1.5rem;
-   background-size: contain;
+   /* Inherit background-image from global site.css for .check class */
    cursor: pointer;
    transition: opacity 0.2s ease;
-}
-
-#student-list .item-editing .btn.check {
-   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20,6 9,17 4,12"/></svg>');
 }
 
 #student-list .item-editing .btn:hover {
