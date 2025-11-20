@@ -611,7 +611,6 @@ page = {
       ele.appendChild(checkbox)
       
       ele.appendChild(this.getEditDeckInput(deck))
-      ele.appendChild(document.createElement('div')) // Placeholder for alignment
       ele.appendChild(this.getEditDeckButton(deck))
       return ele
    },
