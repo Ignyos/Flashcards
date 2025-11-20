@@ -22,6 +22,7 @@ class AccountSettings {
        * @type {number} defaultQuestionCount The number of questions a quiz will have by default
        */
       this.defaultQuestionCount = Object.hasOwn(data, 'defaultQuestionCount') ? data.defaultQuestionCount : 10
+      this.statsHistoryAgeInDays = Object.hasOwn(data, 'statsHistoryAgeInDays') ? data.statsHistoryAgeInDays : 90
    }
 }
 
@@ -75,7 +76,7 @@ class QuestionAnswer {
       this.id = Object.hasOwn(data, 'id') ? data.id : new Date().toISOString()
       this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
       this.quizId = Object.hasOwn(data, 'quizId') ? data.quizId : ''
-      this.questionId = Object.hasOwn(data, 'questionId') ? data.questionId : ''
+      this.cardId = Object.hasOwn(data, 'cardId') ? data.cardId : ''
       this.answeredCorrectly = Object.hasOwn(data, 'answeredCorrectly') ? data.answeredCorrectly : false
    }
 }
@@ -86,11 +87,12 @@ class Quiz {
       this.id = Object.hasOwn(data, 'id') ? data.id : newId(6)
       this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
       this.completeDate = Object.hasOwn(data, 'completeDate') ? data.completeDate : null
-      this.allQuestionIds = Object.hasOwn(data, 'allQuestionIds') ? data.allQuestionIds : []
-      this.answeredQuestionIds = Object.hasOwn(data, 'answeredQuestionIds') ? data.answeredQuestionIds : []
+      this.allDeckIds = Object.hasOwn(data, 'allDeckIds') ? data.allDeckIds : []
+      this.allCardIds = Object.hasOwn(data, 'allCardIds') ? data.allCardIds : []
+      this.answeredCardIds = Object.hasOwn(data, 'answeredCardIds') ? data.answeredCardIds : []
    }
    get isComplete() {
-      if (this.allQuestionIds.length ===  this.answeredQuestionIds.length) {
+      if (this.allCardIds.length === this.answeredCardIds.length) {
          return true
       } 
       return false
@@ -129,7 +131,7 @@ class DeckListItem {
 
 class CardListItem {
    constructor(card, questionAnswer) {
-      if (!card || !questionAnswer || card.id !== questionAnswer.questionId) return
+      if (!card || !questionAnswer || card.id !== questionAnswer.cardId) return
       this.id = card.id
       this.shortPhrase = card.shortPhrase
       this.correct = questionAnswer.answeredCorrectly

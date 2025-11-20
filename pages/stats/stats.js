@@ -2,13 +2,245 @@ page = {
    get element() {
       let ele = document.createElement('div')
       ele.id = 'page'
-      ele.innerText = "Stats."
+      
+      // Page title
+      let title = document.createElement('h1')
+      title.innerText = 'Your Statistics'
+      ele.appendChild(title)
+      
+      // Date info
+      let dateInfo = document.createElement('p')
+      dateInfo.id = 'date-info'
+      dateInfo.className = 'date-info'
+      ele.appendChild(dateInfo)
+      
+      // Stats container
+      let statsContainer = document.createElement('div')
+      statsContainer.id = 'stats-list'
+      ele.appendChild(statsContainer)
+      
       return ele
    },
    async load() {
-
+      this.updateDateInfo()
+      await this.loadDeckList()
    },
    
+   updateDateInfo() {
+      const account = stateMgr.account
+      const daysBack = account.settings.statsHistoryAgeInDays
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+      
+      const dateStr = cutoffDate.toLocaleDateString('en-US', { 
+         year: 'numeric', 
+         month: 'short', 
+         day: 'numeric' 
+      })
+      
+      const dateInfo = document.getElementById('date-info')
+      dateInfo.innerText = `Viewing data since ${dateStr} (${daysBack} days)`
+   },
+   
+   async loadDeckList() {
+      const statsContainer = document.getElementById('stats-list')
+      
+      // Show loading state
+      statsContainer.innerHTML = '<div class="loading">Loading statistics...</div>'
+      
+      try {
+         // Ensure decks are loaded
+         if (!stateMgr.decks || stateMgr.decks.length === 0) {
+            await stateMgr.loadDecks()
+         }
+         
+         const deckListItems = stateMgr.decks || []
+         
+         if (deckListItems.length === 0) {
+            statsContainer.innerHTML = '<div class="empty-state">No decks available</div>'
+            return
+         }
+         
+         // Sort decks alphabetically by title
+         deckListItems.sort((a, b) => a.title.localeCompare(b.title))
+         
+         // Clear loading state
+         statsContainer.innerHTML = ''
+         
+         // Create deck items
+         for (const deckItem of deckListItems) {
+            const deckElement = this.createDeckElement(deckItem)
+            statsContainer.appendChild(deckElement)
+         }
+         
+      } catch (error) {
+         console.error('Error loading deck list:', error)
+         statsContainer.innerHTML = '<div class="error-state">Error loading statistics</div>'
+      }
+   },
+   
+   createDeckElement(deckListItem) {
+      const item = document.createElement('div')
+      item.className = 'item deck-item'
+      item.dataset.deckId = deckListItem.deckId
+      
+      // Toggle button
+      const toggle = document.createElement('div')
+      toggle.className = 'accordion-toggle'
+      toggle.innerHTML = '▶' // Right arrow for collapsed
+      item.appendChild(toggle)
+      
+      // Deck title
+      const title = document.createElement('span')
+      title.className = 'deck-title'
+      title.innerText = deckListItem.title
+      item.appendChild(title)
+      
+      // Stats container (initially hidden)
+      const statsContent = document.createElement('div')
+      statsContent.className = 'deck-stats-content'
+      statsContent.style.display = 'none'
+      item.appendChild(statsContent)
+      
+      // Click handler for accordion
+      item.addEventListener('click', async (e) => {
+         e.preventDefault()
+         await this.toggleDeckExpansion(item, deckListItem)
+      })
+      
+      return item
+   },
+   
+   async toggleDeckExpansion(deckElement, deckListItem) {
+      const isExpanded = deckElement.classList.contains('item-selected')
+      const toggle = deckElement.querySelector('.accordion-toggle')
+      const statsContent = deckElement.querySelector('.deck-stats-content')
+      
+      if (isExpanded) {
+         // Collapse
+         deckElement.classList.remove('item-selected')
+         toggle.innerHTML = '▶' // Right arrow for collapsed
+         statsContent.style.display = 'none'
+      } else {
+         // Expand - load stats if not already loaded
+         deckElement.classList.add('item-selected')
+         toggle.innerHTML = '▼' // Down arrow for expanded
+         
+         if (statsContent.children.length === 0) {
+            statsContent.innerHTML = '<div class="loading">Loading deck statistics...</div>'
+            statsContent.style.display = 'block'
+            
+            try {
+               await this.loadDeckStats(deckListItem, statsContent)
+            } catch (error) {
+               console.error('Error loading deck stats:', error)
+               statsContent.innerHTML = '<div class="error">Error loading statistics</div>'
+            }
+         } else {
+            statsContent.style.display = 'block'
+         }
+      }
+   },
+   
+   async loadDeckStats(deckListItem, statsContainer) {
+      const account = stateMgr.account
+      const accountId = account.id
+      const daysBack = account.settings.statsHistoryAgeInDays
+      
+      // Calculate date cutoff
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+      const cutoffDateISO = cutoffDate.toISOString()
+      
+      // Get completed quizzes for this account within date range
+      const allQuizzes = await dbCtx.quiz.byAccountId(accountId)
+      const deckQuizzes = allQuizzes.filter(quiz => 
+         quiz.completeDate !== null &&
+         quiz.completeDate >= cutoffDateISO &&
+         quiz.allDeckIds.includes(deckListItem.deckId)
+      )
+      
+      if (deckQuizzes.length === 0) {
+         statsContainer.innerHTML = `
+            <div class="deck-summary">
+               <div class="stat-item">No quiz data</div>
+            </div>
+         `
+         return
+      }
+      
+      // Get all quiz IDs for this deck
+      const quizIds = deckQuizzes.map(q => q.id)
+      
+      // Get all question answers for these specific quizzes
+      const deckAnswers = await dbCtx.questionAnswer.byQuizIds(accountId, quizIds)
+      
+      // Calculate deck-level statistics
+      const quizCount = deckQuizzes.length
+      let averageScore = 0
+      
+      if (deckAnswers.length > 0) {
+         const correctAnswers = deckAnswers.filter(a => a.answeredCorrectly).length
+         averageScore = Math.round((correctAnswers / deckAnswers.length) * 100)
+      }
+      
+      // Get all cards for this deck
+      const deckCards = await dbCtx.card.byDeckId(deckListItem.deckId)
+      
+      // Calculate card-level statistics
+      const cardStats = []
+      for (const card of deckCards) {
+         const cardAnswers = deckAnswers.filter(answer => answer.cardId === card.id)
+         
+         let successRate = null
+         if (cardAnswers.length > 0) {
+            const correctCount = cardAnswers.filter(a => a.answeredCorrectly).length
+            successRate = Math.round((correctCount / cardAnswers.length) * 100)
+         }
+         
+         cardStats.push({
+            card: card,
+            successRate: successRate,
+            attemptCount: cardAnswers.length
+         })
+      }
+      
+      // Sort cards worst to best (null rates at end)
+      cardStats.sort((a, b) => {
+         if (a.successRate === null && b.successRate === null) return 0
+         if (a.successRate === null) return 1
+         if (b.successRate === null) return -1
+         return a.successRate - b.successRate
+      })
+      
+      // Build the stats content
+      let content = `
+         <div class="deck-summary">
+            <div class="stat-item">Quizzed ${quizCount} times in the last ${daysBack} days</div>
+            <div class="stat-item">Average score: ${averageScore}%</div>
+         </div>
+         <div class="card-stats">
+            <div class="card-stats-header">Card Performance:</div>
+            <div class="card-list">
+      `
+      
+      for (const cardStat of cardStats) {
+         const displayRate = cardStat.successRate === null ? 'No data' : `${cardStat.successRate}% correct`
+         content += `
+            <div class="card-stat-item">
+               <span class="card-phrase">${cardStat.card.shortPhrase}</span>
+               <span class="card-success-rate">${displayRate}</span>
+            </div>
+         `
+      }
+      
+      content += `
+            </div>
+         </div>
+      `
+      
+      statsContainer.innerHTML = content
+   }
 }
 
 navigation = {}

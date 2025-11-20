@@ -279,19 +279,19 @@ class StateManager {
          return true
       }
 
-      if (this.quiz.allQuestionIds.length === this.quiz.answeredQuestionIds.length) {
+      if (this.quiz.allCardIds.length === this.quiz.answeredCardIds.length) {
          this.quiz.completeDate = new Date().toISOString()
          await dbCtx.quiz.update(this.quiz)
          return true;
       }
-      this.question = await dbCtx.card.get(this.getNextQuestionId())
+      this.card = await dbCtx.card.get(this.getNextCardId())
       return result
    }
    
-   getNextQuestionId() {
+   getNextCardId() {
       let unanswered = []
-      this.quiz.allQuestionIds.forEach(q => {
-         if (!this.quiz.answeredQuestionIds.includes(q)) unanswered.push(q)
+      this.quiz.allCardIds.forEach(q => {
+         if (!this.quiz.answeredCardIds.includes(q)) unanswered.push(q)
       })
       
       if (unanswered.length === 0) {
@@ -302,10 +302,10 @@ class StateManager {
       return unanswered[i]
    }
 
-   async updateAnsweredQuestionIds(id) {
-      this.quiz.answeredQuestionIds.push(id)
+   async updateAnsweredCardIds(id) {
+      this.quiz.answeredCardIds.push(id)
       await dbCtx.quiz.update(this.quiz)
-      this.question = { id: 0, shortPhrase: null , phrase: null, answer: null }
+      this.card = { id: 0, shortPhrase: null , phrase: null, answer: null }
    }
 
    /**
@@ -327,19 +327,7 @@ class StateManager {
    //#region Stats Page
 
    async loadStatsPage() {
-      switch (this.statsView) {
-         case statsViews.QUESTION:
-            this.questionAnswers = await dbCtx.questionAnswer.byAccountId(this.account.id)
-            break
-         case statsViews.QUIZ:
-            this.quizes = await dbCtx.quiz.byAccountId(this.account.id)
-            break
-         default:
-            messageCenter.addInfo('Stats page under construction.')
-            break
-      }
-
-      this.quizes = await dbCtx.quiz.byAccountId(this.account.id)
+      // Stats page handles its own data loading
    }
 
    get statsView() {

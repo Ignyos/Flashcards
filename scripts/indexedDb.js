@@ -573,19 +573,46 @@ const dbCtx = {
       async byAccountId(acctId, dateFilter) {
          try {
             const store = getObjectStore(stores.QUESTION_ANSWER, "readonly");
-            const index = store.index("accountId");
-            const request = index.openCursor(IDBKeyRange.bound([acctId, dateFilter], [acctId, new Date().toISOString()]));
+            const request = store.getAll();
 
             return await new Promise((resolve, reject) => {
-               const answers = [];
                request.onsuccess = function(event) {
-                  const cursor = event.target.result;
-                  if (cursor) {
-                     answers.push(cursor.value);
-                     cursor.continue();
-                  } else {
-                     resolve(answers);
-                  }
+                  const allAnswers = event.target.result;
+                  const filteredAnswers = allAnswers.filter(answer => 
+                     answer.accountId === acctId && 
+                     answer.id >= dateFilter
+                  );
+                  resolve(filteredAnswers);
+               };
+
+               request.onerror = function(event) {
+                  reject("Answers not found");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            return [];
+         }
+      },
+      
+      /**
+       * Returns all QuestionAnswers for the given quiz IDs
+       * @param {string} acctId 
+       * @param {string[]} quizIds 
+       */
+      async byQuizIds(acctId, quizIds) {
+         try {
+            const store = getObjectStore(stores.QUESTION_ANSWER, "readonly");
+            const request = store.getAll();
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const allAnswers = event.target.result;
+                  const filteredAnswers = allAnswers.filter(answer => 
+                     answer.accountId === acctId && 
+                     quizIds.includes(answer.quizId)
+                  );
+                  resolve(filteredAnswers);
                };
 
                request.onerror = function(event) {
@@ -714,8 +741,8 @@ const dbCtx = {
             if (quizCardIds.length === 0) {
                return false;
             } else {
-               // Store as allQuestionIds for backward compatibility
-               result.allQuestionIds = quizCardIds;
+               result.allDeckIds = focusDeckIds;
+               result.allCardIds = quizCardIds;
                await this.add(result);
                return result;
             }
@@ -774,8 +801,7 @@ const dbCtx = {
                   const cursor = event.target.result;
                   if (cursor) {
                      const answer = cursor.value;
-                     // Note: keeping questionId field name for backward compatibility with existing quiz data
-                     if (answer.accountId === acctId && cardIds.includes(answer.questionId)) {
+                     if (answer.accountId === acctId && cardIds.includes(answer.cardId)) {
                         answers.push(answer);
                      }
                      cursor.continue();
@@ -796,17 +822,17 @@ const dbCtx = {
       unansweredCardIds(cardIds, answeredCards) {
          return cardIds
             .filter(cardId => !answeredCards
-               .some(answer => answer.questionId === cardId));
+               .some(answer => answer.cardId === cardId));
       },
       cardIdsInMostNeedOfStudy(count, answeredCards) {
          if (answeredCards.length === 0) { return []; }
          answeredCards.sort((a, b) => {
             return a.id.localeCompare(b.id);
          });
-         const distinctCardIds = [...new Set(answeredCards.map(answer => answer.questionId))];
+         const distinctCardIds = [...new Set(answeredCards.map(answer => answer.cardId))];
          let stackRank = [];// two dimentiional array
          distinctCardIds.forEach(cardId => {
-            const answers = answeredCards.filter(answer => answer.questionId === cardId);
+            const answers = answeredCards.filter(answer => answer.cardId === cardId);
             stackRank.push([cardId, this.getWeight(answers)]);
          });
          let sorted = stackRank.sort((a, b) => {
@@ -912,10 +938,10 @@ const dbCtx = {
             return await new Promise((resolve, reject) => {
                request.onsuccess = async function(event) {
                   const answers = event.target.result;
-                  const questionIds = answers.map(answer => answer.questionId);
-                  const cards = await dbCtx.card.byIdArray(questionIds);
+                  const cardIds = answers.map(answer => answer.cardId);
+                  const cards = await dbCtx.card.byIdArray(cardIds);
                   const results = cards.map(card => {
-                     const answer = answers.find(answer => answer.questionId === card.id);
+                     const answer = answers.find(answer => answer.cardId === card.id);
                      return new CardListItem(card, answer);
                   });
                   resolve(results);

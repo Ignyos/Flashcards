@@ -58,22 +58,22 @@ page = {
 
    async loadNextQuestion() {
       let q = document.getElementById('question')
-      let id = stateMgr.getNextQuestionId()
+      let id = stateMgr.getNextCardId()
       
       if (!id) {
          q.innerText = 'Quiz complete! No more questions.'
          return
       }
       
-      stateMgr.question = await dbCtx.card.get(id)
-      q.innerText = stateMgr.question.phrase
+      stateMgr.card = await dbCtx.card.get(id)
+      q.innerText = stateMgr.card.phrase
    },
 
    get questionEle() {
       let ele = document.createElement('div')
       ele.id = 'question'
       ele.classList.add('info')
-      ele.innerText = stateMgr.question.phrase
+      ele.innerText = stateMgr.card.phrase
       return ele
    },
 
@@ -96,7 +96,7 @@ page = {
    showAnswer() {
       let qp = document.getElementById('controls')
       qp.classList.remove('invisible')
-      document.getElementById('answer').innerText = stateMgr.question.answer
+      document.getElementById('answer').innerText = stateMgr.card.answer
    },
    
    get correctBtn() {
@@ -125,12 +125,16 @@ page = {
       let questionAnswer = new QuestionAnswer({
          accountId: stateMgr.account.id,
          quizId: stateMgr.quiz.id,
-         questionId: stateMgr.question.id,
+         cardId: stateMgr.card.id,
          answeredCorrectly: correct
       })
       await dbCtx.questionAnswer.add(questionAnswer)
-      await stateMgr.updateAnsweredQuestionIds(stateMgr.question.id)
-      if (stateMgr.quiz.allQuestionIds.length === stateMgr.quiz.answeredQuestionIds.length) {
+      await stateMgr.updateAnsweredCardIds(stateMgr.card.id)
+      if (stateMgr.quiz.allCardIds.length === stateMgr.quiz.answeredCardIds.length) {
+         // Mark quiz as complete
+         stateMgr.quiz.completeDate = new Date().toISOString()
+         await dbCtx.quiz.update(stateMgr.quiz)
+         
          let questions = await dbCtx.quiz.results(stateMgr.account.id, stateMgr.quiz.id)
          await stateMgr.setPage(pages.FLASH_CARDS)
          navigation.loadQuizResults(questions)
@@ -145,7 +149,7 @@ page = {
    async quitQuiz() {
       app.confirm(async () => {
          await dbCtx.quiz.quit(stateMgr.account.id, stateMgr.quiz.id)
-         stateMgr.quiz = {id: 0, startDateUTC: null, allQuestionIds: [], answeredQuestionIds: []}
+         stateMgr.quiz = {id: 0, startDateUTC: null, allCardIds: [], answeredCardIds: []}
          await stateMgr.setPage(pages.FLASH_CARDS)
          await app.route()
       },'Really?\n\nYou want to quit?')
@@ -198,8 +202,8 @@ navigation = {
 
    get questionCounter() {
       let ele = document.createElement('div')
-      let n = stateMgr.quiz.answeredQuestionIds.length + 1
-      let total = stateMgr.quiz.allQuestionIds.length
+      let n = stateMgr.quiz.answeredCardIds.length + 1
+      let total = stateMgr.quiz.allCardIds.length
       ele.innerText= `Question ${n} of ${total}`
       ele.id = 'question-counter'
       return ele
