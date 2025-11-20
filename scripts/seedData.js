@@ -77,7 +77,7 @@ class SeedData {
  * @param {number} deckCount - Number of decks per account (default: 3)
  * @param {number} cardsPerDeck - Number of cards per deck (default: 5)
  */
-async function addSeedData(accountNames = ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'], deckCount = 0, cardsPerDeck = 0) {
+async function addSeedData(accountNames = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'], deckCount = 2, cardsPerDeck = 40) {
    try {
       console.log('🌱 Starting seed data creation...')
       
@@ -157,8 +157,14 @@ async function addQuizData(accountId = null, quizCount = 3) {
 
       console.log(`🎯 Creating quiz data for account: ${accountId}`)
       
-      // Get account and decks
-      const account = await dbCtx.account.get(accountId)
+      // Get account from state manager or find it in accounts list
+      const account = stateMgr.account?.id === accountId ? stateMgr.account : stateMgr.accounts.find(acc => acc.id === accountId)
+      
+      if (!account) {
+         console.log('❌ Account not found.')
+         return null
+      }
+      
       const accountDecks = await dbCtx.accountDeck.list(accountId)
       
       if (!accountDecks.length) {
@@ -175,17 +181,39 @@ async function addQuizData(accountId = null, quizCount = 3) {
             console.log('⚠️ Could not create quiz - may not have enough cards')
             continue
          }
+         
+         if (!quiz.allCardIds || quiz.allCardIds.length === 0) {
+            console.log('⚠️ Quiz has no cards - skipping')
+            continue
+         }
+         
+         console.log(`📝 Created quiz ${i + 1} with ${quiz.allCardIds.length} cards`)
 
          // Simulate answering all questions in the quiz
-         for (const cardId of quiz.allCardIds) {
+         for (let j = 0; j < quiz.allCardIds.length; j++) {
+            const cardId = quiz.allCardIds[j]
             const isCorrect = Math.random() > 0.3 // 70% correct rate
+            
+            // Create unique timestamp for each answer to avoid ID collisions
+            // Add quiz index and question index to ensure uniqueness
+            const answerTime = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000 + (i * 1000) + j).toISOString()
+            
             const questionAnswer = new QuestionAnswer({
+               id: answerTime,
                accountId: accountId,
                quizId: quiz.id,
                cardId: cardId,
                answeredCorrectly: isCorrect
             })
-            await dbCtx.questionAnswer.add(questionAnswer)
+            
+            try {
+               await dbCtx.questionAnswer.add(questionAnswer)
+            } catch (error) {
+               console.error('❌ Failed to add question answer:', error)
+               console.log('QuestionAnswer data:', questionAnswer)
+               console.log('Quiz data:', quiz)
+               throw new Error(`Answer not added: ${error.message || error}`)
+            }
          }
 
          // Mark quiz as complete

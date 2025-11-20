@@ -130,6 +130,8 @@ li:hover .disabled {
     border-radius: 3px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     z-index: 10;
+    max-height: 15rem;
+    overflow-y: auto;
 }
 
 .sub-menu ul {

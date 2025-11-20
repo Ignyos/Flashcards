@@ -159,15 +159,24 @@ page = {
       cutoffDate.setDate(cutoffDate.getDate() - daysBack)
       const cutoffDateISO = cutoffDate.toISOString()
       
-      // Get completed quizzes for this account within date range
-      const allQuizzes = await dbCtx.quiz.byAccountId(accountId)
-      const deckQuizzes = allQuizzes.filter(quiz => 
-         quiz.completeDate !== null &&
-         quiz.completeDate >= cutoffDateISO &&
-         quiz.allDeckIds.includes(deckListItem.deckId)
-      )
+      // Get all cards for this deck first
+      const deckCards = await dbCtx.card.byDeckId(deckListItem.deckId)
       
-      if (deckQuizzes.length === 0) {
+      if (deckCards.length === 0) {
+         statsContainer.innerHTML = `
+            <div class="deck-summary">
+               <div class="stat-item">No cards in this deck</div>
+            </div>
+         `
+         return
+      }
+      
+      // Get all question answers for cards in this deck within date range
+      const deckCardIds = deckCards.map(card => card.id)
+      const allAnswers = await dbCtx.questionAnswer.byAccountId(accountId, cutoffDateISO)
+      const deckAnswers = allAnswers.filter(answer => deckCardIds.includes(answer.cardId))
+      
+      if (deckAnswers.length === 0) {
          statsContainer.innerHTML = `
             <div class="deck-summary">
                <div class="stat-item">No quiz data</div>
@@ -176,23 +185,16 @@ page = {
          return
       }
       
-      // Get all quiz IDs for this deck
-      const quizIds = deckQuizzes.map(q => q.id)
+      // Calculate how many unique quizzes contained cards from this deck
+      const uniqueQuizIds = [...new Set(deckAnswers.map(answer => answer.quizId))]
+      const quizCount = uniqueQuizIds.length
       
-      // Get all question answers for these specific quizzes
-      const deckAnswers = await dbCtx.questionAnswer.byQuizIds(accountId, quizIds)
-      
-      // Calculate deck-level statistics
-      const quizCount = deckQuizzes.length
+      // Calculate deck-level average based only on answers to cards from this deck
       let averageScore = 0
-      
       if (deckAnswers.length > 0) {
          const correctAnswers = deckAnswers.filter(a => a.answeredCorrectly).length
          averageScore = Math.round((correctAnswers / deckAnswers.length) * 100)
       }
-      
-      // Get all cards for this deck
-      const deckCards = await dbCtx.card.byDeckId(deckListItem.deckId)
       
       // Calculate card-level statistics
       const cardStats = []
@@ -223,8 +225,8 @@ page = {
       // Build the stats content
       let content = `
          <div class="deck-summary">
-            <div class="stat-item">Quizzed ${quizCount} times in the last ${daysBack} days</div>
-            <div class="stat-item">Average score: ${averageScore}%</div>
+            <div class="stat-item">Cards answered in ${quizCount} quizzes over the last ${daysBack} days</div>
+            <div class="stat-item">Deck average: ${averageScore}% correct</div>
          </div>
          <div class="card-stats">
             <div class="card-stats-header">Card Performance:</div>
