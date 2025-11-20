@@ -231,7 +231,7 @@ page = {
          
          // Refresh the student list
          await this.loadStudents()
-         messageCenter.addSuccess(`Student "${student.name}" has been deleted.`)
+         messageCenter.addInfo(`Student "${student.name}" has been deleted.`)
          
       } catch (error) {
          console.error('Error deleting student:', error)
