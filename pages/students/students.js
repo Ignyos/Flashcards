@@ -39,6 +39,10 @@ page = {
       ele.id = `student-${student.id}`
       ele.classList.add('item')
 
+      // Create header container for toggle, name, and actions
+      let header = document.createElement('div')
+      header.classList.add('student-header')
+
       // Accordion toggle button
       let accordionBtn = document.createElement('div')
       accordionBtn.classList.add('accordion-toggle')
@@ -46,13 +50,13 @@ page = {
       accordionBtn.addEventListener('click', () => {
          this.toggleAccordion(student.id)
       })
-      ele.appendChild(accordionBtn)
+      header.appendChild(accordionBtn)
 
       // Student name
       let nameDiv = document.createElement('div')
       nameDiv.innerText = student.name
       nameDiv.classList.add('student-name')
-      ele.appendChild(nameDiv)
+      header.appendChild(nameDiv)
 
       // Action buttons container
       let actionsDiv = document.createElement('div')
@@ -66,7 +70,8 @@ page = {
          actionsDiv.appendChild(this.deleteStudentBtn(student))
       }
       
-      ele.appendChild(actionsDiv)
+      header.appendChild(actionsDiv)
+      ele.appendChild(header)
 
       // Click handler to select student (add blue border)
       ele.addEventListener('click', (e) => {
@@ -99,21 +104,27 @@ page = {
       ele.id = `student-${student.id}`
       ele.classList.add('item-editing')
 
+      // Create header container for edit elements
+      let header = document.createElement('div')
+      header.classList.add('student-edit-header')
+
       // Accordion toggle button (disabled during edit)
       let accordionBtn = document.createElement('div')
       accordionBtn.classList.add('accordion-toggle')
       accordionBtn.classList.add('disabled')
       accordionBtn.innerHTML = '▶'
-      ele.appendChild(accordionBtn)
+      header.appendChild(accordionBtn)
 
       // Edit input
-      ele.appendChild(this.getEditStudentInput(student))
+      header.appendChild(this.getEditStudentInput(student))
       
       // Spacer for alignment
-      ele.appendChild(document.createElement('div'))
+      header.appendChild(document.createElement('div'))
       
       // Save button
-      ele.appendChild(this.getEditStudentButton(student))
+      header.appendChild(this.getEditStudentButton(student))
+      
+      ele.appendChild(header)
       
       return ele
    },

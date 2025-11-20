@@ -3,6 +3,8 @@
    grid-gap: 1rem;
    grid-template-rows: 1fr;
    grid-template-areas: 'panes';
+   height: 100%;
+   grid-area: page;
 }
 
 #panes {
@@ -29,9 +31,11 @@
    border-top-left-radius: 1rem;
    border-top-right-radius: 1rem;
    border-bottom: none;
-   /* display: grid; */
-   grid-template-rows: auto 1fr;
+   display: flex;
+   flex-direction: column;
    padding: 6px 6px 0 6px;
+   overflow: hidden;
+   min-height: 0; /* Allow grid item to shrink below content size */
 }
 
 @keyframes btn-new-hover {
@@ -172,24 +176,27 @@
 
 /*#region Deck List */
 
-#deck-list {
+.deck-list {
     background-color: #1e2328;
     color: #aab1b5;
     padding-left: 6px;
     border: solid 1px rgba(255, 255, 255, .035);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    overflow-y: auto;
+    flex: 1; /* Take remaining space in tab content */
+    min-height: 0; /* Allow flex shrinking */
 }
 
-#deck-list span {
+.deck-list span {
    color: rgb(92 173 255);
 }
 
-#deck-list , .item , .item-selected {
+.deck-list .item, .deck-list .item-selected {
    display: grid;
    grid-template-columns: auto auto 1fr 2rem 2rem;
    font-size: 1.25rem;
-   border-left: solid 1px transparent;
+   /* border-left: solid 1px transparent; */
    padding-left: .3rem;
    cursor: pointer;
    padding: 6px 0 6px 7px;
@@ -216,7 +223,7 @@
    border-radius: .25rem;
 }
 
-#deck-list .item:hover {
+.deck-list .item:hover {
    background: linear-gradient(90deg, #252a30, transparent);
    animation: item-hover .8s infinite;
    animation-direction: alternate;
@@ -231,15 +238,14 @@
    }
 }
 
-#deck-list .item input[type="checkbox"],
-#deck-list .item-selected input[type="checkbox"] {
+.deck-list .item input[type="checkbox"],
+.deck-list .item-selected input[type="checkbox"] {
    width: 16px;
-   height: 16px;
    cursor: pointer;
    accent-color: rgba(70, 163, 255, .8);
 }
 
-#deck-list .item-editing {
+.deck-list .item-editing {
    display: grid;
    grid-template-columns: auto 1fr 36px;
    font-size: 18px;
@@ -260,13 +266,13 @@
    color: #000;
 }
 
-#deck-list .item-editing .btn {
+.deck-list .item-editing .btn {
    background-color: #FFFF;
    border-top-right-radius: 6px;
    border-bottom-right-radius: 6px;
 }
 
-#deck-list .item-editing .btn:hover {
+.deck-list .item-editing .btn:hover {
    animation: btn-item-hover .6s infinite;
    animation-direction: alternate;
 }
@@ -302,16 +308,19 @@
 
 /*#region Card List */
 
-#card-list {
+.card-list {
     background-color: #1e2328;
     color: #aab1b5;
     padding-left: 6px;
     border: solid 1px rgba(255, 255, 255, .035);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+    overflow-y: auto;
+    flex: 1; /* Take remaining space in tab content */
+    min-height: 0; /* Allow flex shrinking */
 }
 
-#card-list , .card-item {
+.card-list .card-item {
    font-size: 18px;
    border-left: solid 1px transparent;
    padding: 6px 0 6px 7px;
@@ -319,14 +328,14 @@
    border: solid 1px transparent;
 }
 
-#card-list , .card-item:hover {
+.card-list .card-item:hover {
    background: linear-gradient(90deg, #252a30, transparent);
    animation: item-hover .8s infinite;
    animation-direction: alternate;
    border-left: solid 1px rgba(70, 163, 255, .8);
 }
 
-#card-list , .card-item-selected {
+.card-list .card-item-selected {
    display: grid;
    grid-template-columns: 1fr 2rem 2rem;
    font-size: 18px;
@@ -339,7 +348,7 @@
    gap: 8px;
 }
 
-#card-list .card-item-editing {
+.card-list .card-item-editing {
    display: grid;
    grid-template-columns: 1fr 36px;
    font-size: 18px;
@@ -351,13 +360,13 @@
    align-items: center;
 }
 
-#card-list .card-item-editing .btn {
+.card-list .card-item-editing .btn {
    background-color: #FFFF;
    border-top-right-radius: 6px;
    border-bottom-right-radius: 6px;
 }
 
-#card-list .card-item-editing .btn:hover {
+.card-list .card-item-editing .btn:hover {
    animation: btn-item-hover .6s infinite;
    animation-direction: alternate;
 }

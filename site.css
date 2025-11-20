@@ -4,6 +4,8 @@
     overflow: hidden;
     -webkit-user-select: none;
     user-select: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
 }
 
 body {
@@ -450,5 +452,59 @@ background-repeat: no-repeat;
         border-color: rgba(70, 163, 255, .8);
     }
  }
+
+/*#region Custom Scrollbars*/
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: rgba(70, 163, 255, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
+/* For elements that need scrolling */
+.scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.scrollable-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.scrollable-both {
+    overflow: auto;
+}
+
+/*#endregion*/
 
 /*#endregion*/

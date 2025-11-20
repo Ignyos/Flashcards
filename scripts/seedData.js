@@ -1,80 +1,220 @@
 class SeedData {
-   constructor(acctName = "", sCount = 4, tCount = 4, qCount = 4) {
-      this.sCount = sCount
-      this.tCount = tCount
-      this.qCount = qCount
-      if (!acctName) { acctName = newId(4) }
-      this.account = new Account({name:acctName}) // N.Hügelhaus
-      this.subjects = []
-      this.acctSubs = []
-      this.topics = []
-      this.questions = []
+   constructor(accountName = "", deckCount = 3, cardsPerDeck = 5) {
+      this.deckCount = deckCount
+      this.cardsPerDeck = cardsPerDeck
+      if (!accountName) { accountName = `Student_${newId(4)}` }
+      
+      this.account = new Account({ name: accountName })
+      this.decks = []
+      this.accountDecks = []
+      this.cards = []
 
-      for (let s = 1; s <= this.sCount; s++) {
-         let subject = new Subject({
-            title:`${acctName} ${s}`
+      // Create decks and cards
+      for (let d = 1; d <= this.deckCount; d++) {
+         let deck = new Deck({
+            title: `${accountName} Deck ${d}`
          })
-         this.subjects.push(subject)
+         this.decks.push(deck)
 
-         let acctSub = new AccountSubject({
-            accountId:this.account.id,
-            subjectId:subject.id
+         let accountDeck = new AccountDeck({
+            accountId: this.account.id,
+            deckId: deck.id,
+            isSelected: d === 1 // Select first deck by default
          })
-         this.acctSubs.push(acctSub)
+         this.accountDecks.push(accountDeck)
 
-         for (let t = 1; t <= this.tCount; t++) {
-            let topic = new Topic({
-               subjectId:subject.id,
-               title:`${acctName} ${s}.${t}`,
-               questionCount:this.qCount
+         // Create cards for this deck
+         for (let c = 1; c <= this.cardsPerDeck; c++) {
+            let cardTitle = `${accountName} D${d}C${c}`
+            let card = new Card({
+               deckId: deck.id,
+               shortPhrase: cardTitle,
+               phrase: `Question: What is ${cardTitle}?`,
+               answer: `Answer: ${cardTitle} is a sample card for testing.`
             })
-            this.topics.push(topic)
-
-            for (let q = 1; q <= this.qCount; q++) {
-               let txt = `${acctName} ${s}.${t}.${q}`
-               let question = new Question({
-                  topicId:topic.id,
-                  shortPhrase:txt,
-                  phrase:`Q: ${txt}`,
-                  answer:`A: ${txt}`
-               })
-               this.questions.push(question)
-            }
+            this.cards.push(card)
          }
       }
    }
+
    async save() {
-      await dbCtx.account.add(this.account)
+      try {
+         // Add account
+         await dbCtx.account.add(this.account)
+         console.log(`Added account: ${this.account.name}`)
 
-      this.subjects.forEach(async subject => {
-         await dbCtx.subject.add(subject)
-      })
+         // Add decks
+         for (const deck of this.decks) {
+            await dbCtx.deck.add(deck)
+         }
+         console.log(`Added ${this.decks.length} decks`)
 
-      this.acctSubs.forEach(async acctSub => {
-         await dbCtx.accountSubject.add(acctSub)
-      })
+         // Add account-deck relationships
+         for (const accountDeck of this.accountDecks) {
+            await dbCtx.accountDeck.add(accountDeck)
+         }
+         console.log(`Added ${this.accountDecks.length} account-deck relationships`)
 
-      this.topics.forEach(async topic => {
-         await dbCtx.topic.add(topic)
-      })
+         // Add cards
+         for (const card of this.cards) {
+            card.id = await newCardId()
+            await dbCtx.card.add(card)
+         }
+         console.log(`Added ${this.cards.length} cards`)
 
-      this.questions.forEach(async question => {
-         question.id = await newQuestionId()
-         await dbCtx.question.add(question)
-      })
+         console.log(`✅ Seed data for "${this.account.name}" created successfully!`)
+         return this.account
+      } catch (error) {
+         console.error('Error saving seed data:', error)
+         throw error
+      }
    }
 }
 
-async function addSeedData() {
-   const accts = await dbCtx.account.all()
-   if (accts.length > 0) {
-      return
+/**
+ * Adds sample seed data to the database
+ * @param {string[]} accountNames - Array of account names to create
+ * @param {number} deckCount - Number of decks per account (default: 3)
+ * @param {number} cardsPerDeck - Number of cards per deck (default: 5)
+ */
+async function addSeedData(accountNames = ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'], deckCount = 0, cardsPerDeck = 0) {
+   try {
+      console.log('🌱 Starting seed data creation...')
+      
+      const createdAccounts = []
+      
+      for (const name of accountNames) {
+         // Check if account already exists
+         try {
+            const existingAccount = await dbCtx.account.byName(name)
+            if (existingAccount) {
+               console.log(`⚠️ Account "${name}" already exists, skipping...`)
+               continue
+            }
+         } catch (error) {
+            // Account doesn't exist, which is what we want for creating new seed data
+            console.log(`✅ Account "${name}" doesn't exist, proceeding to create...`)
+         }
+
+         const seed = new SeedData(name, deckCount, cardsPerDeck)
+         const account = await seed.save()
+         createdAccounts.push(account)
+      }
+
+      console.log(`🎉 Seed data creation complete! Created ${createdAccounts.length} new accounts.`)
+      
+      // Set the first created account as selected if any were created
+      if (createdAccounts.length > 0) {
+         const metadata = await dbCtx.metadata.get()
+         if (!metadata.selectedAccountId) {
+            await dbCtx.metadata.setSelectedAccountId(createdAccounts[0].id)
+            console.log(`📌 Set "${createdAccounts[0].name}" as selected account`)
+         }
+      }
+
+      return createdAccounts
+   } catch (error) {
+      console.error('❌ Error in addSeedData:', error)
+      throw error
    }
-   let seed;
-   const names = ['a', 'b', 'c', 'd']
-   for (let i = 0; i < names.length; i++) {
-      seed = new SeedData(names[i], 4, 4, 4)
-      await seed.save()
-   }
-   app.route()
 }
+
+/**
+ * Quick seed function for console use - creates one account with sample data
+ * @param {string} name - Account name (default: random)
+ */
+async function quickSeed(name = null) {
+   if (!name) {
+      name = `TestUser_${newId(4)}`
+   }
+   
+   console.log(`🚀 Quick seeding account: ${name}`)
+   const accounts = await addSeedData([name], 2, 4)
+   
+   if (accounts.length > 0) {
+      console.log(`✨ Quick seed complete! Account "${name}" created with 2 decks and 8 total cards.`)
+      console.log(`💡 Tip: Use "app.route()" to refresh the page and see the new data.`)
+      return accounts[0]
+   }
+   return null
+}
+
+/**
+ * Creates quiz data for testing stats - takes existing quizzes and adds answers
+ * @param {string} accountId - Account to create quiz data for
+ * @param {number} quizCount - Number of quizzes to simulate (default: 3)
+ */
+async function addQuizData(accountId = null, quizCount = 3) {
+   try {
+      if (!accountId) {
+         const metadata = await dbCtx.metadata.get()
+         accountId = metadata.selectedAccountId
+         if (!accountId) {
+            console.log('❌ No account selected. Please select an account first.')
+            return null
+         }
+      }
+
+      console.log(`🎯 Creating quiz data for account: ${accountId}`)
+      
+      // Get account and decks
+      const account = await dbCtx.account.get(accountId)
+      const accountDecks = await dbCtx.accountDeck.list(accountId)
+      
+      if (!accountDecks.length) {
+         console.log('❌ No decks found for this account')
+         return null
+      }
+
+      let totalQuizzes = 0
+      
+      for (let i = 0; i < quizCount; i++) {
+         // Create a quiz
+         const quiz = await dbCtx.quiz.create(accountId, account.settings.defaultQuestionCount)
+         if (!quiz) {
+            console.log('⚠️ Could not create quiz - may not have enough cards')
+            continue
+         }
+
+         // Simulate answering all questions in the quiz
+         for (const cardId of quiz.allCardIds) {
+            const isCorrect = Math.random() > 0.3 // 70% correct rate
+            const questionAnswer = new QuestionAnswer({
+               accountId: accountId,
+               quizId: quiz.id,
+               cardId: cardId,
+               answeredCorrectly: isCorrect
+            })
+            await dbCtx.questionAnswer.add(questionAnswer)
+         }
+
+         // Mark quiz as complete
+         quiz.answeredCardIds = [...quiz.allCardIds]
+         quiz.completeDate = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() // Random date within last week
+         await dbCtx.quiz.update(quiz)
+         
+         totalQuizzes++
+      }
+
+      console.log(`✅ Created ${totalQuizzes} completed quizzes with answers`)
+      console.log(`💡 Tip: Check the Stats page to see the quiz performance data!`)
+      return totalQuizzes
+   } catch (error) {
+      console.error('❌ Error creating quiz data:', error)
+      throw error
+   }
+}
+
+// Make functions available globally for console use
+window.addSeedData = addSeedData
+window.quickSeed = quickSeed
+window.addQuizData = addQuizData
+
+console.log(`
+🌱 Seed Data Functions Available:
+- quickSeed('name') - Quick create one test account
+- addSeedData(['name1', 'name2']) - Create multiple accounts
+- addQuizData() - Add quiz/stats data to current account
+
+Example: quickSeed('TestUser')
+`)

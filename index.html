@@ -14,7 +14,7 @@
         <script src="./scripts/indexedDb.js"></script>
         <script src="./scripts/state.js"></script>
 
-        <!-- <script src="./scripts/seedData.js"></script> -->
+        <script src="./scripts/seedData.js"></script>
     </head>
     <body>
     </body>
@@ -25,7 +25,6 @@
             stateMgr = new StateManager()
             app = new App()
             api = window.location.host ? new API() : new API('http://localhost:5194/')
-            // await addSeedData()
         }
     </script>
 </html>

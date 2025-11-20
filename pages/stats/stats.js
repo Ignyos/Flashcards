@@ -84,29 +84,35 @@ page = {
       item.className = 'item deck-item'
       item.dataset.deckId = deckListItem.deckId
       
+      // Create header container for toggle and title
+      const header = document.createElement('div')
+      header.className = 'deck-header'
+      
       // Toggle button
       const toggle = document.createElement('div')
       toggle.className = 'accordion-toggle'
       toggle.innerHTML = '▶' // Right arrow for collapsed
-      item.appendChild(toggle)
+      
+      // Add click handler directly to toggle button
+      toggle.addEventListener('click', async (e) => {
+         e.stopPropagation()
+         await this.toggleDeckExpansion(item, deckListItem)
+      })
+      
+      header.appendChild(toggle)
       
       // Deck title
       const title = document.createElement('span')
       title.className = 'deck-title'
       title.innerText = deckListItem.title
-      item.appendChild(title)
+      header.appendChild(title)
+      
+      item.appendChild(header)
       
       // Stats container (initially hidden)
       const statsContent = document.createElement('div')
-      statsContent.className = 'deck-stats-content'
-      statsContent.style.display = 'none'
+      statsContent.className = 'deck-stats-content hidden'
       item.appendChild(statsContent)
-      
-      // Click handler for accordion
-      item.addEventListener('click', async (e) => {
-         e.preventDefault()
-         await this.toggleDeckExpansion(item, deckListItem)
-      })
       
       return item
    },
@@ -120,7 +126,8 @@ page = {
          // Collapse
          deckElement.classList.remove('item-selected')
          toggle.innerHTML = '▶' // Right arrow for collapsed
-         statsContent.style.display = 'none'
+         statsContent.classList.remove('expanded')
+         statsContent.classList.add('hidden')
       } else {
          // Expand - load stats if not already loaded
          deckElement.classList.add('item-selected')
@@ -128,7 +135,6 @@ page = {
          
          if (statsContent.children.length === 0) {
             statsContent.innerHTML = '<div class="loading">Loading deck statistics...</div>'
-            statsContent.style.display = 'block'
             
             try {
                await this.loadDeckStats(deckListItem, statsContent)
@@ -136,9 +142,10 @@ page = {
                console.error('Error loading deck stats:', error)
                statsContent.innerHTML = '<div class="error">Error loading statistics</div>'
             }
-         } else {
-            statsContent.style.display = 'block'
          }
+         
+         statsContent.classList.remove('hidden')
+         statsContent.classList.add('expanded')
       }
    },
    
