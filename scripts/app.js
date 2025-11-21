@@ -104,6 +104,7 @@ class App {
       result[pages.HOME] = 0;
       result[pages.FLASH_CARDS] = 0;
       result[pages.QUIZ] = 0;
+      result[pages.SETTINGS] = 0;
       result[pages.STATS] = 0;
       result[pages.STUDENTS] = 0;
       return result
@@ -344,6 +345,12 @@ class SiteHeader {
       let statsBtn = this.getMenuItem("Stats", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(statsBtn, pages.STATS)
       ul.appendChild(statsBtn)
+
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.SETTINGS
+      isCurrentPage = currentPage === pages.SETTINGS
+      let settingsBtn = this.getMenuItem("Settings", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(settingsBtn, pages.SETTINGS)
+      ul.appendChild(settingsBtn)
 
       enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
       isCurrentPage = currentPage === pages.FLASH_CARDS

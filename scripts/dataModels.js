@@ -22,7 +22,21 @@ class AccountSettings {
        * @type {number} defaultQuestionCount The number of questions a quiz will have by default
        */
       this.defaultQuestionCount = Object.hasOwn(data, 'defaultQuestionCount') ? data.defaultQuestionCount : 10
+      
+      /**
+       * @type {number} statsHistoryAgeInDays Number of days of quiz history to consider for statistics
+       */
       this.statsHistoryAgeInDays = Object.hasOwn(data, 'statsHistoryAgeInDays') ? data.statsHistoryAgeInDays : 90
+      
+      /**
+       * @type {number} reviewCycleDays Days to wait before re-asking a correctly answered question
+       */
+      this.reviewCycleDays = Object.hasOwn(data, 'reviewCycleDays') ? data.reviewCycleDays : 7
+      
+      /**
+       * @type {number} masteryStreakCount Number of consecutive correct answers needed to consider a question mastered
+       */
+      this.masteryStreakCount = Object.hasOwn(data, 'masteryStreakCount') ? data.masteryStreakCount : 3
    }
 }
 
