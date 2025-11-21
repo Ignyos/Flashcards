@@ -2,6 +2,7 @@ const pages = {
    HOME: "home",
    FLASH_CARDS: "flashcards",
    QUIZ: "quiz",
+   SETTINGS: "settings",
    STATS: "stats",
    STUDENTS: "students",
 }
