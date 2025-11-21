@@ -10,9 +10,11 @@ class SeedData {
       this.cards = []
 
       // Create decks and cards
+      const deckPad = this.deckCount.toString().length
+      const cardPad = this.cardsPerDeck.toString().length
       for (let d = 1; d <= this.deckCount; d++) {
          let deck = new Deck({
-            title: `${accountName} Deck ${d}`
+            title: `${accountName} Deck ${d.toString().padStart(deckPad, '0')}.`
          })
          this.decks.push(deck)
 
@@ -25,7 +27,7 @@ class SeedData {
 
          // Create cards for this deck
          for (let c = 1; c <= this.cardsPerDeck; c++) {
-            let cardTitle = `${accountName} D${d}C${c}`
+            let cardTitle = `${accountName} D${d.toString().padStart(deckPad, '0')}C${c.toString().padStart(cardPad, '0')}`
             let card = new Card({
                deckId: deck.id,
                shortPhrase: cardTitle,
