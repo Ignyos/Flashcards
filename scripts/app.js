@@ -303,45 +303,51 @@ class SiteHeader {
       e.classList.add('menu')
       let ul = document.createElement('ul')
       
-      let enabled = stateMgr.account?.state?.currentPage != pages.QUIZ && stateMgr.account?.state?.currentPage != pages.HOME
-
-      let homeBtn = this.getMenuItem("Home", false, enabled)
+      const currentPage = stateMgr.account?.state?.currentPage
+      
+      let enabled = currentPage != pages.QUIZ && currentPage != pages.HOME
+      let isCurrentPage = currentPage === pages.HOME
+      let homeBtn = this.getMenuItem("Home", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(homeBtn, pages.HOME)
       ul.appendChild(homeBtn)
 
       ul.appendChild(document.createElement('hr'))
       
-      enabled = stateMgr.account?.state?.currentPage != pages.QUIZ
+      enabled = currentPage != pages.QUIZ
       let newAcct = this.getMenuItem("New Student", false, enabled)
       newAcct.addEventListener('click', () => {
          new SiteHeader().createNewStudent()
       })
       ul.appendChild(newAcct)
 
-      enabled = stateMgr.accounts?.length > 1 && stateMgr.account?.state?.currentPage != pages.QUIZ
+      enabled = stateMgr.accounts?.length > 1 && currentPage != pages.QUIZ
       let acctSubMenu = false
       if (enabled) acctSubMenu = await this.getAcctSubMenu()
       ul.appendChild(this.getMenuItem("Switch Student" , acctSubMenu, enabled))
 
-      enabled = stateMgr.accounts?.length > 0 && stateMgr.account?.state?.currentPage != pages.QUIZ && stateMgr.account?.state?.currentPage != pages.STUDENTS
-      let manageStudents = this.getMenuItem("Manage Students", false, enabled)
+      enabled = stateMgr.accounts?.length > 0 && currentPage != pages.QUIZ && currentPage != pages.STUDENTS
+      isCurrentPage = currentPage === pages.STUDENTS
+      let manageStudents = this.getMenuItem("Manage Students", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(manageStudents, pages.STUDENTS)
       ul.appendChild(manageStudents)
 
       ul.appendChild(document.createElement('hr'))
       
       enabled = this.quizBtnEnabled
-      let quizMe = this.getMenuItem("Quiz Me!", false, enabled)
+      isCurrentPage = currentPage === pages.QUIZ
+      let quizMe = this.getMenuItem("Quiz Me!", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(quizMe, pages.QUIZ, () => stateMgr.createNewQuiz())
       ul.appendChild(quizMe)
 
-      enabled = stateMgr.account && stateMgr.account?.state?.currentPage != pages.QUIZ && stateMgr.account?.state?.currentPage != pages.STATS
-      let statsBtn = this.getMenuItem("Stats", false, enabled)
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.STATS
+      isCurrentPage = currentPage === pages.STATS
+      let statsBtn = this.getMenuItem("Stats", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(statsBtn, pages.STATS)
       ul.appendChild(statsBtn)
 
-      enabled = stateMgr.account && stateMgr.account?.state?.currentPage != pages.QUIZ && stateMgr.account?.state?.currentPage != pages.FLASH_CARDS
-      let fcBtn = this.getMenuItem("Flash Cards", false, enabled)
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
+      isCurrentPage = currentPage === pages.FLASH_CARDS
+      let fcBtn = this.getMenuItem("Flash Cards", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(fcBtn, pages.FLASH_CARDS)
       ul.appendChild(fcBtn)
 
@@ -359,7 +365,7 @@ class SiteHeader {
       })
    }
    
-   getMenuItem(txt, submenu = false, enabled = true) {
+   getMenuItem(txt, submenu = false, enabled = true, isCurrentPage = false) {
       let li = document.createElement('li')
       let span = document.createElement('span')
       span.innerText = txt
@@ -384,6 +390,9 @@ class SiteHeader {
       }
       if (!enabled) {
          li.classList.add('disabled')
+         if (isCurrentPage) {
+            li.classList.add('current-page')
+         }
       }
       return li
    }

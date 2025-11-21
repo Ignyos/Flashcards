@@ -109,8 +109,17 @@ body {
     cursor: default;
 }
 
+.menu li.disabled.current-page {
+    background-color: rgba(70, 163, 255, 0.2);
+    color: rgba(70, 163, 255, 0.9);
+}
+
 .menu li:hover.disabled {
     background-color: rgb(30,35,40);
+}
+
+.menu li:hover.disabled.current-page {
+    background-color: rgba(70, 163, 255, 0.2);
 }
 
 li .disabled {
