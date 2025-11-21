@@ -205,6 +205,9 @@
    font-weight: 500;
    font-size: 0.85rem;
    white-space: nowrap;
+   border: 1px solid rgba(255, 255, 255, 0.1);
+   border-radius: 4rem;
+   padding: 0.1rem 0.5rem;
 }
 
 /* Success rate color coding */
