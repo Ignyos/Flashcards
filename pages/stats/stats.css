@@ -1,12 +1,5 @@
 /* Stats Page Styles */
 
-#page {
-   display: flex;
-   flex-direction: column;
-   height: 100%;
-   grid-area: page;
-}
-
 #page h1 {
    text-align: center;
    margin: 1rem 0 1rem 0;
@@ -219,9 +212,6 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-   #page {
-      padding: 16px;
-   }
    
    #page h1 {
       font-size: 1.5rem;

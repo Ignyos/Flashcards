@@ -1,12 +1,3 @@
-#page {
-   display: grid;
-   grid-gap: 1rem;
-   grid-template-rows: 1fr;
-   grid-template-areas: 'panes';
-   height: 100%;
-   grid-area: page;
-}
-
 #panes {
    grid-area: panes;
    display: grid;

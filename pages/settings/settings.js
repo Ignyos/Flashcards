@@ -22,13 +22,26 @@ page = {
       // Performance Tracking section
       settingsContainer.appendChild(this.createPerformanceTrackingSection())
       
+      // Button container
+      let buttonContainer = document.createElement('div')
+      buttonContainer.className = 'button-container'
+      
       // Save button
       let saveButton = document.createElement('button')
       saveButton.className = 'save-button'
       saveButton.innerText = 'Save Settings'
       saveButton.id = 'save-settings-btn'
       saveButton.addEventListener('click', () => this.saveSettings())
-      settingsContainer.appendChild(saveButton)
+      buttonContainer.appendChild(saveButton)
+      
+      // Reset button
+      let resetButton = document.createElement('button')
+      resetButton.className = 'reset-button'
+      resetButton.innerText = 'Reset to Defaults'
+      resetButton.addEventListener('click', () => this.resetToDefaults())
+      buttonContainer.appendChild(resetButton)
+      
+      settingsContainer.appendChild(buttonContainer)
       
       ele.appendChild(settingsContainer)
       
@@ -133,19 +146,6 @@ page = {
          { min: 7, max: 365 },
          'days'
       ))
-      
-      // Reset to defaults link
-      let resetContainer = document.createElement('div')
-      resetContainer.style.textAlign = 'center'
-      resetContainer.style.marginTop = '1rem'
-      
-      let resetLink = document.createElement('span')
-      resetLink.className = 'reset-link'
-      resetLink.innerText = 'Reset all settings to defaults'
-      resetLink.addEventListener('click', () => this.resetToDefaults())
-      resetContainer.appendChild(resetLink)
-      
-      content.appendChild(resetContainer)
       
       section.appendChild(content)
       

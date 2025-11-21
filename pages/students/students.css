@@ -1,12 +1,5 @@
 /* Students Page Styles */
 
-#page {
-   display: flex;
-   flex-direction: column;
-   height: 100%;
-   grid-area: page;
-}
-
 /* Fix confirmation modal width for delete student dialog */
 .modal.confirm .msg {
   max-width: 350px;

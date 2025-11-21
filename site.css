@@ -232,6 +232,9 @@ li:hover .disabled {
 
 #page {
     grid-area: page;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 /*#region Icons*/
