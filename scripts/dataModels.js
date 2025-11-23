@@ -31,12 +31,19 @@ class AccountSettings {
       /**
        * @type {number} reviewCycleDays Days to wait before re-asking a correctly answered question
        */
-      this.reviewCycleDays = Object.hasOwn(data, 'reviewCycleDays') ? data.reviewCycleDays : 7
+      this.reviewCycleDays = Object.hasOwn(data, 'reviewCycleDays') ? data.reviewCycleDays : 21
       
       /**
        * @type {number} masteryStreakCount Number of consecutive correct answers needed to consider a question mastered
        */
       this.masteryStreakCount = Object.hasOwn(data, 'masteryStreakCount') ? data.masteryStreakCount : 3
+      
+      /**
+       * @type {number} masteryWindowDays Time span for achieving mastery in days
+       */
+      this.masteryWindowDays = Object.hasOwn(data, 'masteryWindowDays') ? 
+         Math.min(data.masteryWindowDays, this.reviewCycleDays) : 
+         Math.min(21, this.reviewCycleDays)
    }
 }
 

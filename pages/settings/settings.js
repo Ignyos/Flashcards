@@ -108,6 +108,16 @@ page = {
          'correct answers'
       ))
       
+      // Mastery Window
+      content.appendChild(this.createSettingItem(
+         'Mastery Window',
+         'Time span for achieving mastery. Answer a question correctly ' + stateMgr.account.settings.masteryStreakCount + ' consecutive times within this timeframe. Note: This must be less than or equal to the Review Cycle.',
+         'masteryWindowDays',
+         'number',
+         { min: 1, max: stateMgr.account.settings.reviewCycleDays },
+         'days'
+      ))
+      
       section.appendChild(content)
       
       return section
@@ -209,6 +219,13 @@ page = {
          stateMgr.account.settings[settingKey] = numValue
       }
       
+      // Update dependent validations and descriptions
+      if (settingKey === 'reviewCycleDays') {
+         this.updateMasteryWindowValidation()
+      } else if (settingKey === 'masteryStreakCount') {
+         this.updateMasteryWindowDescription()
+      }
+      
       // Check if we have pending changes
       this.pendingChanges = JSON.stringify(stateMgr.account.settings) !== JSON.stringify(this.originalSettings)
       this.updateSaveButtonState()
@@ -218,6 +235,29 @@ page = {
       const saveButton = document.getElementById('save-settings-btn')
       if (saveButton) {
          saveButton.disabled = !this.pendingChanges
+      }
+   },
+
+   updateMasteryWindowValidation() {
+      const masteryWindowInput = document.getElementById('setting-masteryWindowDays')
+      if (masteryWindowInput) {
+         masteryWindowInput.max = stateMgr.account.settings.reviewCycleDays
+         // If current value exceeds new max, adjust it
+         if (parseInt(masteryWindowInput.value) > stateMgr.account.settings.reviewCycleDays) {
+            masteryWindowInput.value = stateMgr.account.settings.reviewCycleDays
+            this.onSettingChange('masteryWindowDays', masteryWindowInput.value)
+         }
+      }
+   },
+
+   updateMasteryWindowDescription() {
+      const masteryWindowItem = document.getElementById('setting-masteryWindowDays')?.closest('.setting-item')
+      if (masteryWindowItem) {
+         const description = masteryWindowItem.querySelector('.setting-description')
+         if (description) {
+            description.innerText = 'Time span for achieving mastery. Answer a question correctly ' + 
+               stateMgr.account.settings.masteryStreakCount + ' consecutive times within this timeframe.'
+         }
       }
    },
 
@@ -240,8 +280,9 @@ page = {
          // Reset to default values
          stateMgr.account.settings.defaultQuestionCount = 10
          stateMgr.account.settings.statsHistoryAgeInDays = 90
-         stateMgr.account.settings.reviewCycleDays = 7
+         stateMgr.account.settings.reviewCycleDays = 21
          stateMgr.account.settings.masteryStreakCount = 3
+         stateMgr.account.settings.masteryWindowDays = 21
          
          // Update the UI
          this.updateInputValues()
@@ -259,6 +300,7 @@ page = {
       document.getElementById('setting-statsHistoryAgeInDays').value = settings.statsHistoryAgeInDays
       document.getElementById('setting-reviewCycleDays').value = settings.reviewCycleDays
       document.getElementById('setting-masteryStreakCount').value = settings.masteryStreakCount
+      document.getElementById('setting-masteryWindowDays').value = settings.masteryWindowDays
    }
 }
 
