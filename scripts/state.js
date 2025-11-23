@@ -17,6 +17,7 @@ class StateManager {
       //#flashcards page
       this.decks;
       this.cards;
+      this.selectedDecksHaveCards = false; // Track whether any selected decks contain cards
 
       //#flashcards & quiz page
       this.card;
@@ -101,6 +102,7 @@ class StateManager {
       this.card = null
       this.quizes = []
       this.quiz = null
+      this.selectedDecksHaveCards = false
    }
 
    //#region Flashcards Page
@@ -109,6 +111,9 @@ class StateManager {
       if (!this.metaData?.selectedAccountId) { this.clearPageData(); return }
       if (!await this.loadDecks()) return
       await this.loadCards()
+      await this.checkSelectedDecksHaveCards()
+      // Update the site header to reflect the current Quiz Me button state
+      await app.initSiteHeader()
    }
 
    async loadDecks() {
@@ -137,6 +142,35 @@ class StateManager {
    }
 
    /**
+    * Check if any of the selected decks contain cards and update the selectedDecksHaveCards property
+    * @returns {Promise<boolean>} True if any selected deck has cards, false otherwise
+    */
+   async checkSelectedDecksHaveCards() {
+      if (!this.decks || !this.decks.length) {
+         this.selectedDecksHaveCards = false
+         return false
+      }
+
+      const selectedDecks = this.decks.filter(deck => deck.isSelected)
+      if (!selectedDecks.length) {
+         this.selectedDecksHaveCards = false
+         return false
+      }
+
+      // Check if any selected deck has cards
+      for (const deck of selectedDecks) {
+         const cards = await dbCtx.card.byDeckId(deck.deckId)
+         if (cards && cards.length > 0) {
+            this.selectedDecksHaveCards = true
+            return true
+         }
+      }
+
+      this.selectedDecksHaveCards = false
+      return false
+   }
+
+   /**
     * @returns {string} The Id of the currently selected deck or null if no deck is selected
     */
    get deckId() {
@@ -157,6 +191,10 @@ class StateManager {
          return a.title.localeCompare(b.title)
       })
       this.cards = []
+      
+      // Update Quiz Me button state since deck availability may have changed
+      await this.checkSelectedDecksHaveCards()
+      await app.initSiteHeader()
    }
 
    async updateAccountDeck(acctDeck) {
@@ -201,6 +239,10 @@ class StateManager {
       this.cards.sort((a,b) => {
          return a.shortPhrase.localeCompare(b.shortPhrase)
       })
+      
+      // Update Quiz Me button state since card availability may have changed
+      await this.checkSelectedDecksHaveCards()
+      await app.initSiteHeader()
    }
 
    async updateCard(card) {
@@ -225,6 +267,10 @@ class StateManager {
       if (i > -1) {
          this.cards.splice(i, 1)
       }
+      
+      // Update Quiz Me button state since card availability may have changed
+      await this.checkSelectedDecksHaveCards()
+      await app.initSiteHeader()
    }
 
    async setSelectedCard(deckId, cardId) {

@@ -79,7 +79,7 @@ class SeedData {
  * @param {number} deckCount - Number of decks per account (default: 3)
  * @param {number} cardsPerDeck - Number of cards per deck (default: 5)
  */
-async function addSeedData(accountNames = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'], deckCount = 2, cardsPerDeck = 40) {
+async function addSeedData(accountNames = ['A','B','C','D','E','F','G','H','I','J'], deckCount = 2, cardsPerDeck = 10) {
    try {
       console.log('🌱 Starting seed data creation...')
       

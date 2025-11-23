@@ -71,6 +71,13 @@ class AccountDeck {
       this.deckId = Object.hasOwn(data, 'deckId') ? data.deckId : ''
       this.isSelected = Object.hasOwn(data, 'isSelected') ? data.isSelected : false
       this.selectedCardId = Object.hasOwn(data, 'selectedCardId') ? data.selectedCardId : null
+      
+      /**
+       * @type {string[]} masteredCardIds Array of card IDs that have been mastered by this account for this deck.
+       * Cards are added when they meet the mastery criteria (consecutive correct answers within the mastery window).
+       * Used for performance optimization to avoid re-evaluating mastered cards during quiz generation.
+       */
+      this.masteredCardIds = Object.hasOwn(data, 'masteredCardIds') ? data.masteredCardIds : []
    }
 }
 

@@ -274,7 +274,8 @@ class SiteHeader {
    get quizBtnEnabled() {
       const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
       const hasSelectedDecks = stateMgr.decks && stateMgr.decks.some(deck => deck.isSelected)
-      return !isQuizPage && hasSelectedDecks
+      const selectedDecksHaveCards = stateMgr.selectedDecksHaveCards
+      return !isQuizPage && hasSelectedDecks && selectedDecksHaveCards
    }
 
    async displayMenu() {

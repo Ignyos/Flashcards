@@ -8,16 +8,16 @@
 }
 
 .settings-container {
-   display: flex;
-   flex-direction: column;
-   gap: 0;
-   max-width: 600px;
+   /* display: flex; */
+   /* flex-direction: column; */
+   /* gap: 0; */
+   max-width: 50rem;
    margin: 0 auto;
-   width: 100%;
-   flex: 1; /* Take remaining space */
+   /* width: 100%; */
+   /* flex: 1; */
    overflow-y: auto; /* Scroll the settings content */
-   min-height: 0; /* Allow flex shrinking */
-   padding-right: 0.5rem; /* Space for scrollbar */
+   /* min-height: 0; */
+   /* padding-right: 0.5rem; */
    padding-bottom: 2rem; /* Extra space at bottom for better scrolling experience */
 }
 

@@ -676,6 +676,10 @@ page = {
          })
          
          await dbCtx.accountDeck.update(accountDeck)
+         
+         // Check if selected decks have cards and update the Quiz Me button state
+         await stateMgr.checkSelectedDecksHaveCards()
+         await app.initSiteHeader()
       } catch (error) {
          console.error('Error toggling deck selection:', error)
       }

@@ -27,6 +27,9 @@
    grid-template-rows: 1fr 1fr 48px;
    grid-template-areas: 'question' 'answer' 'controls';
    row-gap: 1rem;
+   min-width: 50%;
+   max-width: 50rem;
+   margin: 0 auto;
 }
 
 .without-answer > #controls {

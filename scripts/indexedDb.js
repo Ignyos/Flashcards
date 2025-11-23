@@ -721,143 +721,41 @@ const dbCtx = {
             return false;
          }
       },
-      async create(acctId, questionCount) {
-         try {
-            const result = new Quiz({ accountId: acctId });
-            const focusDeckIds = await this.focusDeckIds(acctId);
-            const cardIds = await this.cardIds(focusDeckIds);
-            const answeredCards = await this.answeredCards(acctId, cardIds);
-            const unansweredCardIds = this.unansweredCardIds(cardIds, answeredCards);
+      async create(acctId, questionCount, isQuick = true) {
+         if (isQuick) {
+            try {
+               // Use the new mastery-aware quiz generation logic
+               const cardIds = await this.generateQuickQuiz(acctId, questionCount)
+               
+               // If no cards are available, return false (maintains backward compatibility)
+               if (cardIds.length === 0) {
+                  return false
+               }
 
-            let quizCardIds;
-            if (unansweredCardIds.length > questionCount - 1) {
-               quizCardIds = getRandomNElements(unansweredCardIds, questionCount);
-            } else {
-               const n = questionCount - unansweredCardIds.length;
-               const cardIdsInMostNeedOfStudy = this.cardIdsInMostNeedOfStudy(n, answeredCards);
-               quizCardIds = unansweredCardIds.concat(cardIdsInMostNeedOfStudy);
+               // Get the deck IDs for the selected cards
+               const selectedDecks = await this._getSelectedAccountDecks(acctId)
+               const deckIds = selectedDecks.map(deck => deck.deckId)
+               
+               // Create Quiz object with selected cards and decks
+               const result = new Quiz({
+                  accountId: acctId,
+                  allCardIds: cardIds,
+                  allDeckIds: deckIds
+               })
+                           
+               // Persist the quiz to the database
+               await this.add(result)
+               
+               return result
+               
+            } catch (error) {
+               console.error('Error creating quiz:', error)
+               return false
             }
-
-            if (quizCardIds.length === 0) {
-               return false;
-            } else {
-               result.allDeckIds = focusDeckIds;
-               result.allCardIds = quizCardIds;
-               await this.add(result);
-               return result;
-            }
-         } catch (error) {
-            console.error(error);
-            return false;
-         }
-      },
-      async focusDeckIds(acctId) {
-         try {
-            const accountDecks = await dbCtx.accountDeck.list(acctId);
-            // Get selected deck IDs from accountDecks where isSelected = true
-            return accountDecks
-               .filter(accountDeck => accountDeck.isSelected)
-               .map(accountDeck => accountDeck.deckId);
-         } catch (error) {
-            console.error(error);
-            return [];
-         }
-      },
-      async cardIds(focusDeckIds) {
-         try {
-            const store = getObjectStore(stores.CARD, "readonly");
-            const request = store.getAll();
-
-            return await new Promise((resolve, reject) => {
-               request.onsuccess = function(event) {
-                  const cards = event.target.result;
-                  resolve(cards
-                     .filter(card => focusDeckIds
-                        .includes(card.deckId) 
-                        && !card.deletedDate)
-                     .map(card => card.id)
-                  );
-               };
-
-               request.onerror = function(event) {
-                  reject("Cards not found");
-               };
-            });
-         } catch (error) {
-            console.error(error);
-            return [];
-         }
-      },
-      async answeredCards(acctId, cardIds) {
-         try {
-         const store = getObjectStore(stores.QUESTION_ANSWER, "readonly");
-         const index = store.index("compsiteIndex");
-
-            return await new Promise((resolve, reject) => {
-               const answers = [];
-               const request = index.openCursor();
-
-               request.onsuccess = function(event) {
-                  const cursor = event.target.result;
-                  if (cursor) {
-                     const answer = cursor.value;
-                     if (answer.accountId === acctId && cardIds.includes(answer.cardId)) {
-                        answers.push(answer);
-                     }
-                     cursor.continue();
-                  } else {
-                     resolve(answers);
-                  }
-               };
-
-               request.onerror = function(event) {
-                  reject("Answers not found");
-               };
-            });
-         } catch (error) {
-            console.error(error);
-            return [];
-         }
-      },
-      unansweredCardIds(cardIds, answeredCards) {
-         return cardIds
-            .filter(cardId => !answeredCards
-               .some(answer => answer.cardId === cardId));
-      },
-      cardIdsInMostNeedOfStudy(count, answeredCards) {
-         if (answeredCards.length === 0) { return []; }
-         answeredCards.sort((a, b) => {
-            return a.id.localeCompare(b.id);
-         });
-         const distinctCardIds = [...new Set(answeredCards.map(answer => answer.cardId))];
-         let stackRank = [];// two dimentiional array
-         distinctCardIds.forEach(cardId => {
-            const answers = answeredCards.filter(answer => answer.cardId === cardId);
-            stackRank.push([cardId, this.getWeight(answers)]);
-         });
-         let sorted = stackRank.sort((a, b) => {
-            return a[1] - b[1];
-         });
-         if (count < sorted.length) {
-            return sorted.slice(0, count).map(item => item[0]);
          } else {
-            return sorted.map(item => item[0]);
-         }
-      },
-      getWeight(answeredQuestions) {
-         const allTimeCount = answeredQuestions.length;
-         const allTimeCorrect = answeredQuestions.filter(answer => answer.answeredCorrectly).length;
-         const allTimeAvg = allTimeCorrect / allTimeCount;
-
-         let lastThreeCorrect = 0;
-         let lastThreeAvg = 0;
-         if (allTimeCount > 2) {
-            const lastThree = answeredQuestions.slice(allTimeCount - 3);
-            lastThreeCorrect = lastThree.filter(answer => answer.answeredCorrectly).length;
-            lastThreeAvg = lastThreeCorrect / 3;
-         } else {
-            lastThreeCorrect = answeredQuestions.filter(answer => answer.answeredCorrectly).length;
-            lastThreeAvg = lastThreeCorrect / 3;
+            // no logic for this yet.
+            // this will handle a custom quiz generation strategy in the future.
+            return false
          }
       },
       async add(quiz) {
@@ -973,6 +871,302 @@ const dbCtx = {
          } catch (error) {
             console.error(error);
          }
+      },
+      /**
+       * Generates a new quiz using the complex mastery-aware algorithm described in about.md
+       * @param {string} accountId The account to generate quiz for
+       * @param {number|null} questionCount Override default question count (uses account settings if null)
+       * @returns {string[]} Array of card IDs for the quiz, or empty array if no questions available
+       */
+      async generateQuickQuiz(accountId, questionCount = null) {
+         try {
+            // Get account settings for configuration
+            const account = await dbCtx.account.byId(accountId)
+            if (!account) throw new Error('Account not found')
+            
+            const settings = account.settings
+            const targetQuestionCount = questionCount || settings.defaultQuestionCount
+            
+            // Step 1: Get selected decks and load all cards
+            const selectedDecks = await this._getSelectedAccountDecks(accountId)
+            if (selectedDecks.length === 0) return []
+            
+            const allCards = await this._getAllCardsFromDecks(selectedDecks.map(d => d.deckId))
+            if (allCards.length === 0) return []
+            
+            // Step 2: Filter out already mastered cards
+            const filteredCards = this._filterOutMasteredCards(allCards, selectedDecks)
+            if (filteredCards.length === 0) return []
+            
+            // Step 3: Load and filter QuestionAnswers by review cycle
+            const reviewCutoffDate = new Date()
+            reviewCutoffDate.setDate(reviewCutoffDate.getDate() - settings.reviewCycleDays)
+            const recentQuestionAnswers = await this._getRecentQuestionAnswers(
+               accountId, 
+               filteredCards.map(c => c.id), 
+               reviewCutoffDate
+            )
+            
+            // Step 4: Detect newly mastered cards and update cache
+            const newlyMasteredCardIds = this._detectNewlyMasteredCards(
+               recentQuestionAnswers, 
+               settings.masteryStreakCount,
+               settings.masteryWindowDays
+            )
+            
+            if (newlyMasteredCardIds.length > 0) {
+               await this._updateMasteredCardsCache(selectedDecks, newlyMasteredCardIds)
+            }
+            
+            const availableCards = filteredCards.filter(card => 
+               !newlyMasteredCardIds.includes(card.id)
+            )
+            if (availableCards.length === 0) return []
+            
+            // Step 5 & 6: Prioritize and build quiz
+            return this._buildQuizFromPrioritizedCards(
+               availableCards, 
+               recentQuestionAnswers, 
+               targetQuestionCount,
+               settings.reviewCycleDays
+            )
+            
+         } catch (error) {
+            console.error('Error generating quiz:', error)
+            return []
+         }
+      },
+      
+      /**
+       * Helper method to get selected AccountDeck objects for an account
+       * @private
+       */
+      async _getSelectedAccountDecks(accountId) {
+         const accountDecks = await dbCtx.accountDeck.list(accountId)
+         return accountDecks.filter(deck => deck.isSelected)
+      },
+      
+      /**
+       * Helper method to get all cards from specified deck IDs
+       * @private
+       */
+      async _getAllCardsFromDecks(deckIds) {
+         const store = getObjectStore(stores.CARD, "readonly")
+         const request = store.getAll()
+         
+         return await new Promise((resolve, reject) => {
+            request.onsuccess = function(event) {
+               const cards = event.target.result
+               resolve(cards.filter(card => 
+                  deckIds.includes(card.deckId) && !card.deletedDate
+               ))
+            }
+            
+            request.onerror = function(event) {
+               reject("Cards not found")
+            }
+         })
+      },
+      
+      /**
+       * Helper method to filter out cards that are already mastered
+       * @private
+       */
+      _filterOutMasteredCards(cards, accountDecks) {
+         const masteredCardIds = new Set()
+         
+         // Collect all mastered card IDs from all selected decks
+         accountDecks.forEach(deck => {
+            if (deck.masteredCardIds && deck.masteredCardIds.length > 0) {
+               deck.masteredCardIds.forEach(cardId => masteredCardIds.add(cardId))
+            }
+         })
+         
+         return cards.filter(card => !masteredCardIds.has(card.id))
+      },
+      
+      /**
+       * Helper method to get recent QuestionAnswers within review cycle
+       * @private
+       */
+      async _getRecentQuestionAnswers(accountId, cardIds, cutoffDate) {
+         const store = getObjectStore(stores.QUESTION_ANSWER, "readonly")
+         const index = store.index("compsiteIndex")
+         
+         return await new Promise((resolve, reject) => {
+            const answers = []
+            const request = index.openCursor()
+            
+            request.onsuccess = function(event) {
+               const cursor = event.target.result
+               if (cursor) {
+                  const answer = cursor.value
+                  if (answer.accountId === accountId && 
+                      cardIds.includes(answer.cardId) &&
+                      new Date(answer.id) >= cutoffDate) {
+                     answers.push(answer)
+                  }
+                  cursor.continue()
+               } else {
+                  resolve(answers)
+               }
+            }
+            
+            request.onerror = function(event) {
+               reject("Question answers not found")
+            }
+         })
+      },
+      
+      /**
+       * Helper method to detect newly mastered cards using mastery window logic
+       * @private
+       */
+      _detectNewlyMasteredCards(questionAnswers, masteryStreakCount, masteryWindowDays) {
+         const newlyMasteredCardIds = []
+         const masteryWindowMs = masteryWindowDays * 24 * 60 * 60 * 1000
+         
+         // Group answers by card ID
+         const answersByCard = {}
+         questionAnswers.forEach(answer => {
+            if (!answersByCard[answer.cardId]) {
+               answersByCard[answer.cardId] = []
+            }
+            answersByCard[answer.cardId].push(answer)
+         })
+         
+         // Check each card for mastery
+         Object.keys(answersByCard).forEach(cardId => {
+            const answers = answersByCard[cardId]
+            
+            // Sort by date descending (most recent first)
+            answers.sort((a, b) => new Date(b.id) - new Date(a.id))
+            
+            // Check if last N answers were correct and within mastery window
+            if (answers.length >= masteryStreakCount) {
+               const recentAnswers = answers.slice(0, masteryStreakCount)
+               const allCorrect = recentAnswers.every(answer => answer.answeredCorrectly)
+               
+               if (allCorrect) {
+                  // Check if they're within the mastery window
+                  const oldestCorrectAnswer = recentAnswers[recentAnswers.length - 1]
+                  const newestCorrectAnswer = recentAnswers[0]
+                  const timeDiff = new Date(newestCorrectAnswer.id) - new Date(oldestCorrectAnswer.id)
+                  
+                  if (timeDiff <= masteryWindowMs) {
+                     newlyMasteredCardIds.push(cardId)
+                  }
+               }
+            }
+         })
+         
+         return newlyMasteredCardIds
+      },
+      
+      /**
+       * Helper method to update mastered cards cache in AccountDeck records
+       * @private
+       */
+      async _updateMasteredCardsCache(accountDecks, newlyMasteredCardIds) {
+         if (newlyMasteredCardIds.length === 0) return
+         
+         // Get card details to map them to their decks
+         const masteredCards = await dbCtx.card.byIdArray(newlyMasteredCardIds)
+         
+         // Group mastered cards by deck ID
+         const masteredByDeckId = {}
+         masteredCards.forEach(card => {
+            if (!masteredByDeckId[card.deckId]) {
+               masteredByDeckId[card.deckId] = []
+            }
+            masteredByDeckId[card.deckId].push(card.id)
+         })
+         
+         // Update each AccountDeck with its newly mastered cards
+         for (const accountDeck of accountDecks) {
+            const deckMasteredCards = masteredByDeckId[accountDeck.deckId] || []
+            
+            if (deckMasteredCards.length > 0) {
+               // Add to existing mastered cards, avoiding duplicates
+               const existingMastered = new Set(accountDeck.masteredCardIds || [])
+               deckMasteredCards.forEach(cardId => existingMastered.add(cardId))
+               accountDeck.masteredCardIds = Array.from(existingMastered)
+               
+               // Update in database
+               await dbCtx.accountDeck.update(accountDeck)
+            }
+         }
+      },
+      
+      /**
+       * Helper method to build quiz from prioritized cards using steps 5 & 6 logic
+       * @private
+       */
+      _buildQuizFromPrioritizedCards(availableCards, questionAnswers, targetQuestionCount, reviewCycleDays) {
+         // Step 5: Separate unasked vs asked cards
+         const answeredCardIds = new Set(questionAnswers.map(qa => qa.cardId))
+         const unaskedCards = availableCards.filter(card => !answeredCardIds.has(card.id))
+         const askedCards = availableCards.filter(card => answeredCardIds.has(card.id))
+         
+         let selectedCardIds = []
+         
+         // Step 5.1: If enough unasked questions, use only those
+         if (unaskedCards.length >= targetQuestionCount) {
+            // Randomly select from unasked cards
+            const shuffled = [...unaskedCards].sort(() => 0.5 - Math.random())
+            selectedCardIds = shuffled.slice(0, targetQuestionCount).map(card => card.id)
+         } else {
+            // Step 5.2: Add all unasked cards, then fill with worst performers
+            selectedCardIds = unaskedCards.map(card => card.id)
+            const remainingNeeded = targetQuestionCount - selectedCardIds.length
+            
+            if (remainingNeeded > 0 && askedCards.length > 0) {
+               // Step 6: Sort asked cards by success rate (worst to best), then by age (oldest to newest)
+               const cardPerformance = this._calculateCardPerformance(askedCards, questionAnswers, reviewCycleDays)
+               const sortedWorstPerformers = cardPerformance
+                  .sort((a, b) => {
+                     // First by success rate (ascending - worst first)
+                     if (a.successRate !== b.successRate) {
+                        return a.successRate - b.successRate
+                     }
+                     // Then by age (ascending - oldest first)
+                     return a.oldestAnswerDate - b.oldestAnswerDate
+                  })
+                  .slice(0, remainingNeeded)
+                  .map(perf => perf.cardId)
+               
+               selectedCardIds = selectedCardIds.concat(sortedWorstPerformers)
+            }
+         }
+         
+         return selectedCardIds
+      },
+      
+      /**
+       * Helper method to calculate performance metrics for cards
+       * @private
+       */
+      _calculateCardPerformance(cards, questionAnswers, reviewCycleDays) {
+         const reviewCutoffDate = new Date()
+         reviewCutoffDate.setDate(reviewCutoffDate.getDate() - reviewCycleDays)
+         
+         return cards.map(card => {
+            const cardAnswers = questionAnswers.filter(qa => qa.cardId === card.id)
+            const correctAnswers = cardAnswers.filter(qa => qa.answeredCorrectly).length
+            const successRate = cardAnswers.length > 0 ? correctAnswers / cardAnswers.length : 0
+            
+            // Find oldest answer date within review cycle
+            const sortedAnswers = cardAnswers.sort((a, b) => new Date(a.id) - new Date(b.id))
+            const oldestAnswerDate = sortedAnswers.length > 0 ? new Date(sortedAnswers[0].id) : new Date()
+            
+            return {
+               cardId: card.id,
+               successRate,
+               oldestAnswerDate,
+               totalAnswers: cardAnswers.length,
+               correctAnswers
+            }
+         })
       }
    },
    deck: {
