@@ -159,6 +159,7 @@ class DeckListItem {
       this.accountId = accountDeck.accountId
       this.isSelected = accountDeck.isSelected
       this.selectedCardId = accountDeck.selectedCardId
+      this.masteredCardIds = accountDeck.masteredCardIds || []
       
       this.title = deck.title
    }

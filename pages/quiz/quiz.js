@@ -135,6 +135,9 @@ page = {
          stateMgr.quiz.completeDate = new Date().toISOString()
          await dbCtx.quiz.update(stateMgr.quiz)
          
+         // Update mastered cards based on quiz performance
+         await dbCtx.quiz.updateMasteredCardsAfterCompletion(stateMgr.account.id, stateMgr.quiz)
+         
          let questions = await dbCtx.quiz.results(stateMgr.account.id, stateMgr.quiz.id)
          await stateMgr.setPage(pages.FLASH_CARDS)
          navigation.loadQuizResults(questions)

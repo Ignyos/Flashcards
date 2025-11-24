@@ -223,10 +223,10 @@ page = {
             
             // Reset Mastery Data
             content.appendChild(this.createActionItem(
-               'Reset Old Mastery Progress',
-               'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be preserved.',
+               'Reset Mastery Progress',
+               'Clear all mastery progress and delete the learning history for mastered cards. This completely removes mastery records and their associated question answers.',
                'reset-mastery-data',
-               'Reset Old Mastery',
+               'Reset Mastery',
                'destructive'
             ))
             
@@ -357,7 +357,7 @@ page = {
                break
 
             case 'reset-mastery-data':
-               if (await this.confirmDataAction('Reset Mastery Progress', 'This will reset old question mastery progress. Cards with recent correct answers within the Mastery Window will be preserved.')) {
+               if (await this.confirmDataAction('Reset Mastery Progress', 'This will completely clear all mastery progress and delete the learning history for mastered cards. This action cannot be undone.')) {
                   await this.resetMasteryData()
                   alert('Mastery progress has been reset successfully.')
                }
@@ -412,11 +412,29 @@ page = {
    async resetMasteryData() {
       const accountId = stateMgr.account.id
       
+      // Get actual AccountDeck objects from database instead of using cached DeckListItems
+      const accountDecks = await dbCtx.accountDeck.all(accountId)
+      
       // Clear mastery data from all account decks
-      if (stateMgr.decks) {
-         for (let deck of stateMgr.decks) {
-            deck.masteredCardIds = []
-            await dbCtx.accountDeck.update(deck)
+      for (let accountDeck of accountDecks) {
+         // Get mastered card IDs before clearing them
+         const masteredCardIds = accountDeck.masteredCardIds || []
+         
+         // Delete QuestionAnswers for all mastered cards
+         for (let cardId of masteredCardIds) {
+            await dbCtx.questionAnswer.deleteByCardId(accountId, cardId)
+         }
+         
+         // Clear mastered cards list and update in database
+         accountDeck.masteredCardIds = []
+         await dbCtx.accountDeck.update(accountDeck)
+         
+         // Also update the state manager cache if it exists
+         if (stateMgr.decks) {
+            const cacheIndex = stateMgr.decks.findIndex(d => d.deckId === accountDeck.deckId)
+            if (cacheIndex !== -1) {
+               stateMgr.decks[cacheIndex].masteredCardIds = []
+            }
          }
       }
       

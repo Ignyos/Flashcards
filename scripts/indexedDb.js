@@ -707,6 +707,54 @@ const dbCtx = {
       },
 
       /**
+       * Delete all question answers for a specific card
+       * @param {string} accountId 
+       * @param {string} cardId 
+       */
+      async deleteByCardId(accountId, cardId) {
+         try {
+            const store = getObjectStore(stores.QUESTION_ANSWER, "readwrite");
+            const request = store.getAll();
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const allAnswers = event.target.result;
+                  const cardAnswers = allAnswers.filter(answer => 
+                     answer.accountId === accountId && answer.cardId === cardId
+                  );
+                  let deleteCount = 0;
+                  let totalCount = cardAnswers.length;
+
+                  if (totalCount === 0) {
+                     resolve();
+                     return;
+                  }
+
+                  cardAnswers.forEach(answer => {
+                     const deleteRequest = store.delete(answer.id);
+                     deleteRequest.onsuccess = function() {
+                        deleteCount++;
+                        if (deleteCount === totalCount) {
+                           resolve();
+                        }
+                     };
+                     deleteRequest.onerror = function() {
+                        reject("Failed to delete answer for card: " + cardId);
+                     };
+                  });
+               };
+
+               request.onerror = function(event) {
+                  reject("Failed to retrieve answers for card: " + cardId);
+               };
+            });
+         } catch (error) {
+            console.error('Error deleting answers for card:', error);
+            throw error;
+         }
+      },
+
+      /**
        * Get all question answers for a specific account without date filtering
        * @param {string} accountId 
        */
@@ -1238,6 +1286,78 @@ const dbCtx = {
                correctAnswers
             }
          })
+      },
+
+      /**
+       * Update mastered cards after quiz completion
+       * Detects newly mastered cards and updates AccountDeck.masteredCardIds
+       * @param {string} accountId 
+       * @param {Quiz} quiz - The completed quiz object
+       */
+      async updateMasteredCardsAfterCompletion(accountId, quiz) {
+         try {
+            // Get account settings for mastery criteria
+            const account = await dbCtx.account.byId(accountId)
+            if (!account) throw new Error('Account not found')
+            
+            const settings = account.settings
+            const masteryStreakCount = settings.masteryStreakCount
+            const masteryWindowDays = settings.masteryWindowDays
+            
+            // Get quiz details to know which decks were involved
+            if (!quiz) return
+            
+            const selectedDecks = await this._getSelectedAccountDecks(accountId)
+            const quizDeckIds = quiz.allDeckIds
+            const relevantDecks = selectedDecks.filter(deck => quizDeckIds.includes(deck.deckId))
+            
+            // For each deck involved in the quiz, check for newly mastered cards
+            for (const deck of relevantDecks) {
+               const cards = await dbCtx.card.byDeckId(deck.deckId)
+               const cardIds = cards.map(card => card.id)
+               
+               // Calculate cutoff date for mastery window
+               const cutoffDate = new Date()
+               cutoffDate.setDate(cutoffDate.getDate() - masteryWindowDays)
+               
+               // Get recent question answers for mastery detection
+               const recentAnswers = await this._getRecentQuestionAnswers(accountId, cardIds, cutoffDate)
+               
+               // Detect newly mastered cards
+               const newlyMasteredCardIds = this._detectNewlyMasteredCards(
+                  recentAnswers, 
+                  masteryStreakCount, 
+                  masteryWindowDays
+               )
+               
+               // Add newly mastered cards to the deck's mastered list (avoid duplicates)
+               // Ensure masteredCardIds is always an array
+               const currentMasteredIds = deck.masteredCardIds || []
+               let updatedMasteredIds = [...currentMasteredIds]
+               for (const cardId of newlyMasteredCardIds) {
+                  if (!updatedMasteredIds.includes(cardId)) {
+                     updatedMasteredIds.push(cardId)
+                  }
+               }
+               
+               // Update the deck if there are new mastered cards
+               if (updatedMasteredIds.length > currentMasteredIds.length) {
+                  const updatedDeck = { ...deck, masteredCardIds: updatedMasteredIds }
+                  await dbCtx.accountDeck.update(updatedDeck)
+                  
+                  // Update the state manager's cache to reflect the changes
+                  if (typeof stateMgr !== 'undefined' && stateMgr.decks) {
+                     const cacheIndex = stateMgr.decks.findIndex(d => d.deckId === deck.deckId)
+                     if (cacheIndex !== -1) {
+                        stateMgr.decks[cacheIndex].masteredCardIds = updatedMasteredIds
+                     }
+                  }
+               }
+            }
+         } catch (error) {
+            console.error('Error updating mastered cards after completion:', error)
+            // Don't throw error - this is not critical for quiz functionality
+         }
       },
 
       /**

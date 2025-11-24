@@ -365,6 +365,9 @@ class StateManager {
       if (latest && !latest.completeDate) {
          latest.completeDate = new Date().toISOString()
          await dbCtx.quiz.update(latest)
+         
+         // Update mastered cards for the completed quiz
+         await dbCtx.quiz.updateMasteredCardsAfterCompletion(this.account.id, latest)
       }
       await dbCtx.quiz.create(this.account.id, this.account.settings.defaultQuestionCount)
    }

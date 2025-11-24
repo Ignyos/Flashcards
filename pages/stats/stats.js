@@ -198,6 +198,8 @@ page = {
       
       // Calculate card-level statistics
       const cardStats = []
+      const masteredCardIds = deckListItem.masteredCardIds || []
+      
       for (const card of deckCards) {
          const cardAnswers = deckAnswers.filter(answer => answer.cardId === card.id)
          
@@ -210,37 +212,92 @@ page = {
          cardStats.push({
             card: card,
             successRate: successRate,
-            attemptCount: cardAnswers.length
+            attemptCount: cardAnswers.length,
+            isMastered: masteredCardIds.includes(card.id)
          })
       }
       
-      // Sort cards worst to best (null rates at end)
-      cardStats.sort((a, b) => {
+      // Separate mastered and unmastered cards
+      const unmastered = cardStats.filter(stat => !stat.isMastered)
+      const mastered = cardStats.filter(stat => stat.isMastered)
+      
+      // Sort unmastered cards worst to best (null rates at end)
+      unmastered.sort((a, b) => {
          if (a.successRate === null && b.successRate === null) return 0
          if (a.successRate === null) return 1
          if (b.successRate === null) return -1
          return a.successRate - b.successRate
       })
       
+      // Sort mastered cards by performance (best to worst)
+      mastered.sort((a, b) => {
+         if (a.successRate === null && b.successRate === null) return 0
+         if (a.successRate === null) return 1
+         if (b.successRate === null) return -1
+         return b.successRate - a.successRate
+      })
+      
+      // Check if all cards with attempts are mastered
+      const cardsWithAttempts = cardStats.filter(stat => stat.attemptCount > 0)
+      const allMastered = cardsWithAttempts.length > 0 && cardsWithAttempts.every(stat => stat.isMastered)
+      
       // Build the stats content
       let content = `
          <div class="deck-summary">
             <div class="stat-item">Cards answered in ${quizCount} quizzes over the last ${daysBack} days</div>
             <div class="stat-item">Deck average: ${averageScore}% correct</div>
+            ${allMastered ? '<div class="stat-item mastery-message">🎉 You\'re a master of this topic!</div>' : ''}
          </div>
          <div class="card-stats">
             <div class="card-stats-header">Card Performance:</div>
             <div class="card-list">
       `
       
-      for (const cardStat of cardStats) {
-         const displayRate = cardStat.successRate === null ? 'No data' : `${cardStat.successRate}% correct`
+      // Display unmastered cards
+      for (const cardStat of unmastered) {
+         let displayRate
+         if (cardStat.successRate === null) {
+            displayRate = 'No data'
+         } else {
+            const correctCount = Math.round((cardStat.successRate / 100) * cardStat.attemptCount)
+            displayRate = `${correctCount}/${cardStat.attemptCount} (${cardStat.successRate}%)`
+         }
          content += `
             <div class="card-stat-item">
                <span class="card-phrase">${cardStat.card.shortPhrase}</span>
                <span class="card-success-rate">${displayRate}</span>
             </div>
          `
+      }
+      
+      // Add separator and mastered section if there are mastered cards
+      if (mastered.length > 0) {
+         content += `
+            </div>
+            <div class="mastery-separator">
+               <hr>
+               <div class="mastery-section-header">Mastered Cards (${mastered.length})</div>
+               <hr>
+            </div>
+            <div class="card-list">
+         `
+         
+         // Display mastered cards
+         for (const cardStat of mastered) {
+            let displayRate
+            if (cardStat.successRate === null) {
+               displayRate = 'No data'
+            } else {
+               const correctCount = Math.round((cardStat.successRate / 100) * cardStat.attemptCount)
+               displayRate = `${correctCount}/${cardStat.attemptCount} (${cardStat.successRate}%)`
+            }
+            content += `
+               <div class="card-stat-item mastered">
+                  <span class="card-phrase">${cardStat.card.shortPhrase}</span>
+                  <span class="card-success-rate">${displayRate}</span>
+               </div>
+            `
+         }
       }
       
       content += `
