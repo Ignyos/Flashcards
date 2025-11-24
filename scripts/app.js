@@ -25,7 +25,18 @@ class App {
       {
          siteHeader.remove()
       }
-      document.body.appendChild(await new SiteHeader().getElement())
+      
+      // Ensure decks are loaded and state is up-to-date before creating header
+      if (stateMgr.loadDecks && (!stateMgr.decks || stateMgr.decks.length === 0)) {
+         await stateMgr.loadDecks()
+      }
+      
+      if (stateMgr.checkSelectedDecksHaveCards) {
+         await stateMgr.checkSelectedDecksHaveCards()
+      }
+      
+      const siteHeaderElement = await new SiteHeader().getElement()
+      document.body.appendChild(siteHeaderElement)
    }
 
    get title()
@@ -272,7 +283,7 @@ class SiteHeader {
    }
 
    get quizBtnEnabled() {
-      const isQuizPage = stateMgr.account?.currentPage == pages.QUIZ
+      const isQuizPage = stateMgr.account?.state?.currentPage == pages.QUIZ
       const hasSelectedDecks = stateMgr.decks && stateMgr.decks.some(deck => deck.isSelected)
       const selectedDecksHaveCards = stateMgr.selectedDecksHaveCards
       return !isQuizPage && hasSelectedDecks && selectedDecksHaveCards

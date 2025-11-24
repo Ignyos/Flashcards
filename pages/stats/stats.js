@@ -270,13 +270,11 @@ page = {
          `
       }
       
-      // Add separator and mastered section if there are mastered cards
+      // Add separator and mastered cards if there are any
       if (mastered.length > 0) {
          content += `
             </div>
             <div class="mastery-separator">
-               <hr>
-               <div class="mastery-section-header">Mastered Cards (${mastered.length})</div>
                <hr>
             </div>
             <div class="card-list">
@@ -284,17 +282,10 @@ page = {
          
          // Display mastered cards
          for (const cardStat of mastered) {
-            let displayRate
-            if (cardStat.successRate === null) {
-               displayRate = 'No data'
-            } else {
-               const correctCount = Math.round((cardStat.successRate / 100) * cardStat.attemptCount)
-               displayRate = `${correctCount}/${cardStat.attemptCount} (${cardStat.successRate}%)`
-            }
             content += `
                <div class="card-stat-item mastered">
                   <span class="card-phrase">${cardStat.card.shortPhrase}</span>
-                  <span class="card-success-rate">${displayRate}</span>
+                  <span class="card-success-rate mastered-indicator">✓ Mastered</span>
                </div>
             `
          }
