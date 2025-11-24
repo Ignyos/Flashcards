@@ -22,8 +22,11 @@ page = {
       // Performance Tracking section
       settingsContainer.appendChild(this.createPerformanceTrackingSection())
       
-      // Data Management section
-      settingsContainer.appendChild(this.createDataManagementSection())
+      // Learning Data Management section
+      settingsContainer.appendChild(this.createLearningDataManagementSection())
+      
+      // Import / Export section
+      settingsContainer.appendChild(this.createImportExportSection())
       
       // Button container
       let buttonContainer = document.createElement('div')
@@ -165,7 +168,7 @@ page = {
       return section
    },
 
-   createDataManagementSection() {
+   createLearningDataManagementSection() {
       let section = document.createElement('div')
       section.className = 'settings-section'
       
@@ -175,12 +178,12 @@ page = {
       
       let title = document.createElement('h2')
       title.className = 'settings-section-title'
-      title.innerText = 'Data Management'
+      title.innerText = 'Learning Data Management'
       header.appendChild(title)
       
       let description = document.createElement('p')
       description.className = 'settings-section-description'
-      description.innerText = 'Manage your learning history and reset progress data. Use these options to start fresh or clean up old data.'
+      description.innerText = 'Manage your learning history and reset progress data. Use these options to start fresh or clean up old learning data.'
       header.appendChild(description)
       
       section.appendChild(header)
@@ -215,6 +218,35 @@ page = {
          'Reset Everything',
          'destructive-primary'
       ))
+      
+      section.appendChild(content)
+      
+      return section
+   },
+
+   createImportExportSection() {
+      let section = document.createElement('div')
+      section.className = 'settings-section'
+      
+      // Header
+      let header = document.createElement('div')
+      header.className = 'settings-section-header'
+      
+      let title = document.createElement('h2')
+      title.className = 'settings-section-title'
+      title.innerText = 'Import / Export'
+      header.appendChild(title)
+      
+      let description = document.createElement('p')
+      description.className = 'settings-section-description'
+      description.innerText = 'Export your learning data for backup or transfer to another device. Import options will be available in future updates.'
+      header.appendChild(description)
+      
+      section.appendChild(header)
+      
+      // Content
+      let content = document.createElement('div')
+      content.className = 'settings-section-content'
       
       // Export Data
       content.appendChild(this.createActionItem(
