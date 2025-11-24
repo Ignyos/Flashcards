@@ -307,18 +307,9 @@ class SiteHeader {
       
       const currentPage = stateMgr.account?.state?.currentPage
       
-      // Home
-      let enabled = currentPage != pages.QUIZ && currentPage != pages.HOME
-      let isCurrentPage = currentPage === pages.HOME
-      let homeBtn = this.getMenuItem("Home", false, enabled, isCurrentPage)
-      if (enabled) this.addPageSwitcher(homeBtn, pages.HOME)
-      ul.appendChild(homeBtn)
-
-      ul.appendChild(document.createElement('hr'))
-      
       // Flashcards
-      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
-      isCurrentPage = currentPage === pages.FLASH_CARDS
+      let enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
+      let isCurrentPage = currentPage === pages.FLASH_CARDS
       let fcBtn = this.getMenuItem("Flashcards", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(fcBtn, pages.FLASH_CARDS)
       ul.appendChild(fcBtn)
@@ -374,6 +365,13 @@ class SiteHeader {
       let settingsBtn = this.getMenuItem("Settings", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(settingsBtn, pages.SETTINGS)
       ul.appendChild(settingsBtn)
+
+      // Home
+      enabled = currentPage != pages.QUIZ && currentPage != pages.HOME
+      isCurrentPage = currentPage === pages.HOME
+      let homeBtn = this.getMenuItem("Home", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(homeBtn, pages.HOME)
+      ul.appendChild(homeBtn)
 
       e.appendChild(ul)
       return e
