@@ -224,7 +224,7 @@ page = {
             // Reset Mastery Data
             content.appendChild(this.createActionItem(
                'Reset Old Mastery Progress',
-               'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be retained.',
+               'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be preserved.',
                'reset-mastery-data',
                'Reset Old Mastery',
                'destructive'
@@ -357,7 +357,7 @@ page = {
                break
 
             case 'reset-mastery-data':
-               if (await this.confirmDataAction('Reset Mastery Progress', 'This will reset all question mastery progress. All cards will be treated as new questions again.')) {
+               if (await this.confirmDataAction('Reset Mastery Progress', 'This will reset old question mastery progress. Cards with recent correct answers within the Mastery Window will be preserved.')) {
                   await this.resetMasteryData()
                   alert('Mastery progress has been reset successfully.')
                }
