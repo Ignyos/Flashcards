@@ -36,11 +36,40 @@
    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.header-container {
+   display: flex;
+   align-items: center;
+   gap: 0.75rem;
+   margin-bottom: 0.5rem;
+}
+
+.accordion-toggle {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 1.25rem;
+   height: 1.25rem;
+   border-radius: 0.25rem;
+   background: rgba(255, 255, 255, 0.1);
+   color: #fff;
+   font-size: 0.7rem;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   -webkit-user-select: none;
+   user-select: none;
+   flex-shrink: 0;
+}
+
+.accordion-toggle:hover {
+   background: rgba(255, 255, 255, 0.2);
+}
+
 .settings-section-title {
    color: #fff;
    font-size: 1.2rem;
    font-weight: 600;
    margin: 0;
+   flex: 1;
 }
 
 .settings-section-description {
@@ -52,6 +81,11 @@
 
 .settings-section-content {
    padding: 1.5rem;
+   transition: all 0.2s ease;
+}
+
+.settings-section-content.hidden {
+   display: none;
 }
 
 .setting-item {

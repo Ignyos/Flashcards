@@ -44,6 +44,17 @@ class AccountSettings {
       this.masteryWindowDays = Object.hasOwn(data, 'masteryWindowDays') ? 
          Math.min(data.masteryWindowDays, this.reviewCycleDays) : 
          Math.min(21, this.reviewCycleDays)
+      
+      /**
+       * @type {Object} settingsSectionStates Tracks which settings sections are expanded/collapsed
+       */
+      this.settingsSectionStates = Object.hasOwn(data, 'settingsSectionStates') ? 
+         data.settingsSectionStates : {
+            'quiz-generation': true,
+            'performance-tracking': true,
+            'learning-data-management': true,
+            'import-export': true
+         }
    }
 }
 

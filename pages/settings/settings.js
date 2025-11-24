@@ -60,206 +60,204 @@ page = {
       this.updateSaveButtonState()
    },
 
-   createQuizGenerationSection() {
+   createCollapsibleSection(sectionId, title, description, contentCreator) {
+      const isExpanded = stateMgr.account.settings.settingsSectionStates[sectionId]
+      
       let section = document.createElement('div')
       section.className = 'settings-section'
+      section.setAttribute('data-section-id', sectionId)
       
-      // Header
+      // Header with toggle
       let header = document.createElement('div')
       header.className = 'settings-section-header'
       
-      let title = document.createElement('h2')
-      title.className = 'settings-section-title'
-      title.innerText = 'Quiz Generation'
-      header.appendChild(title)
+      // Create header container for toggle and title
+      let headerContainer = document.createElement('div')
+      headerContainer.className = 'header-container'
       
-      let description = document.createElement('p')
-      description.className = 'settings-section-description'
-      description.innerText = 'Control how quizzes are created and which questions are included.'
-      header.appendChild(description)
+      // Toggle button
+      const toggle = document.createElement('div')
+      toggle.className = 'accordion-toggle'
+      toggle.innerHTML = isExpanded ? '▼' : '▶'
+      
+      // Add click handler to toggle
+      toggle.addEventListener('click', async (e) => {
+         e.stopPropagation()
+         await this.toggleSectionExpansion(section, sectionId)
+      })
+      
+      headerContainer.appendChild(toggle)
+      
+      let titleElement = document.createElement('h2')
+      titleElement.className = 'settings-section-title'
+      titleElement.innerText = title
+      headerContainer.appendChild(titleElement)
+      
+      header.appendChild(headerContainer)
+      
+      let descriptionElement = document.createElement('p')
+      descriptionElement.className = 'settings-section-description'
+      descriptionElement.innerText = description
+      header.appendChild(descriptionElement)
       
       section.appendChild(header)
       
       // Content
       let content = document.createElement('div')
       content.className = 'settings-section-content'
+      if (!isExpanded) {
+         content.classList.add('hidden')
+      }
       
-      // Default Question Count
-      content.appendChild(this.createSettingItem(
-         'Default Question Count',
-         'Number of questions included in each quiz by default.',
-         'defaultQuestionCount',
-         'number',
-         { min: 1, max: 100 },
-         'questions'
-      ))
-      
-      // Review Cycle Days
-      content.appendChild(this.createSettingItem(
-         'Review Cycle',
-         'Days to wait before asking a correctly answered question again. This helps with spaced repetition learning.',
-         'reviewCycleDays',
-         'number',
-         { min: 1, max: 365 },
-         'days'
-      ))
-      
-      // Mastery Streak Count
-      content.appendChild(this.createSettingItem(
-         'Mastery Threshold',
-         'Number of consecutive correct answers needed before a question is considered mastered and asked less frequently.',
-         'masteryStreakCount',
-         'number',
-         { min: 1, max: 10 },
-         'correct answers'
-      ))
-      
-      // Mastery Window
-      content.appendChild(this.createSettingItem(
-         'Mastery Window',
-         'Time span for achieving mastery. Answer a question correctly ' + stateMgr.account.settings.masteryStreakCount + ' consecutive times within this timeframe. Note: This must be less than or equal to the Review Cycle.',
-         'masteryWindowDays',
-         'number',
-         { min: 1, max: stateMgr.account.settings.reviewCycleDays },
-         'days'
-      ))
+      // Use the content creator function to populate the content
+      contentCreator(content)
       
       section.appendChild(content)
       
       return section
+   },
+
+   async toggleSectionExpansion(sectionElement, sectionId) {
+      const toggle = sectionElement.querySelector('.accordion-toggle')
+      const content = sectionElement.querySelector('.settings-section-content')
+      const isExpanded = !content.classList.contains('hidden')
+      
+      if (isExpanded) {
+         // Collapse
+         toggle.innerHTML = '▶'
+         content.classList.add('hidden')
+         stateMgr.account.settings.settingsSectionStates[sectionId] = false
+      } else {
+         // Expand
+         toggle.innerHTML = '▼'
+         content.classList.remove('hidden')
+         stateMgr.account.settings.settingsSectionStates[sectionId] = true
+      }
+      
+      // Save the state to the database
+      await dbCtx.account.update(stateMgr.account)
+   },
+
+   createQuizGenerationSection() {
+      return this.createCollapsibleSection(
+         'quiz-generation',
+         'Quiz Generation',
+         'Control how quizzes are created and which questions are included.',
+         (content) => {
+            // Default Question Count
+            content.appendChild(this.createSettingItem(
+               'Default Question Count',
+               'Number of questions included in each quiz by default.',
+               'defaultQuestionCount',
+               'number',
+               { min: 1, max: 100 },
+               'questions'
+            ))
+            
+            // Review Cycle Days
+            content.appendChild(this.createSettingItem(
+               'Review Cycle',
+               'Days to wait before asking a correctly answered question again. This helps with spaced repetition learning.',
+               'reviewCycleDays',
+               'number',
+               { min: 1, max: 365 },
+               'days'
+            ))
+            
+            // Mastery Streak Count
+            content.appendChild(this.createSettingItem(
+               'Mastery Threshold',
+               'Number of consecutive correct answers needed before a question is considered mastered and asked less frequently.',
+               'masteryStreakCount',
+               'number',
+               { min: 1, max: 10 },
+               'correct answers'
+            ))
+            
+            // Mastery Window
+            content.appendChild(this.createSettingItem(
+               'Mastery Window',
+               'Time span for achieving mastery. Answer a question correctly ' + stateMgr.account.settings.masteryStreakCount + ' consecutive times within this timeframe. Note: This must be less than or equal to the Review Cycle.',
+               'masteryWindowDays',
+               'number',
+               { min: 1, max: stateMgr.account.settings.reviewCycleDays },
+               'days'
+            ))
+         }
+      )
    },
 
    createPerformanceTrackingSection() {
-      let section = document.createElement('div')
-      section.className = 'settings-section'
-      
-      // Header
-      let header = document.createElement('div')
-      header.className = 'settings-section-header'
-      
-      let title = document.createElement('h2')
-      title.className = 'settings-section-title'
-      title.innerText = 'Performance Tracking'
-      header.appendChild(title)
-      
-      let description = document.createElement('p')
-      description.className = 'settings-section-description'
-      description.innerText = 'Configure how your quiz performance and statistics are calculated and displayed.'
-      header.appendChild(description)
-      
-      section.appendChild(header)
-      
-      // Content
-      let content = document.createElement('div')
-      content.className = 'settings-section-content'
-      
-      // Stats History Age
-      content.appendChild(this.createSettingItem(
-         'Statistics History',
-         'Number of days of quiz history to include in statistics and performance calculations. Older data will be ignored.',
-         'statsHistoryAgeInDays',
-         'number',
-         { min: 7, max: 365 },
-         'days'
-      ))
-      
-      section.appendChild(content)
-      
-      return section
+      return this.createCollapsibleSection(
+         'performance-tracking',
+         'Performance Tracking',
+         'Configure how your quiz performance and statistics are calculated and displayed.',
+         (content) => {
+            // Stats History Age
+            content.appendChild(this.createSettingItem(
+               'Statistics History',
+               'Number of days of quiz history to include in statistics and performance calculations. Older data will be ignored.',
+               'statsHistoryAgeInDays',
+               'number',
+               { min: 7, max: 365 },
+               'days'
+            ))
+         }
+      )
    },
 
    createLearningDataManagementSection() {
-      let section = document.createElement('div')
-      section.className = 'settings-section'
-      
-      // Header
-      let header = document.createElement('div')
-      header.className = 'settings-section-header'
-      
-      let title = document.createElement('h2')
-      title.className = 'settings-section-title'
-      title.innerText = 'Learning Data Management'
-      header.appendChild(title)
-      
-      let description = document.createElement('p')
-      description.className = 'settings-section-description'
-      description.innerText = 'Manage your learning history and reset progress data. Use these options to start fresh or clean up old learning data.'
-      header.appendChild(description)
-      
-      section.appendChild(header)
-      
-      // Content
-      let content = document.createElement('div')
-      content.className = 'settings-section-content'
-      
-      // Clear Quiz History
-      content.appendChild(this.createActionItem(
-         'Clear Quiz History',
-         'Delete all completed quizzes and their results. This will remove all quiz data from your statistics but will not affect mastery progress.',
-         'clear-quiz-history',
-         'Clear History',
-         'destructive'
-      ))
-      
-      // Reset Mastery Data
-      content.appendChild(this.createActionItem(
-         'Reset Old Mastery Progress',
-         'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be retained.',
-         'reset-mastery-data',
-         'Reset Old Mastery',
-         'destructive'
-      ))
-      
-      // Reset All Data
-      content.appendChild(this.createActionItem(
-         'Reset All Learning Data',
-         'Complete reset: delete all quiz history AND mastery progress. This clears all historical learning data but cards may still be re-detected as mastered based on recent performance within the current Mastery Window when taking new quizzes.',
-         'reset-all-data',
-         'Reset Everything',
-         'destructive-primary'
-      ))
-      
-      section.appendChild(content)
-      
-      return section
+      return this.createCollapsibleSection(
+         'learning-data-management',
+         'Learning Data Management',
+         'Manage your learning history and reset progress data. Use these options to start fresh or clean up old learning data.',
+         (content) => {
+            // Clear Quiz History
+            content.appendChild(this.createActionItem(
+               'Clear Quiz History',
+               'Delete all completed quizzes and their results. This will remove all quiz data from your statistics but will not affect mastery progress.',
+               'clear-quiz-history',
+               'Clear History',
+               'destructive'
+            ))
+            
+            // Reset Mastery Data
+            content.appendChild(this.createActionItem(
+               'Reset Old Mastery Progress',
+               'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be retained.',
+               'reset-mastery-data',
+               'Reset Old Mastery',
+               'destructive'
+            ))
+            
+            // Reset All Data
+            content.appendChild(this.createActionItem(
+               'Reset All Learning Data',
+               'Complete reset: delete all quiz history AND mastery progress. This clears all historical learning data but cards may still be re-detected as mastered based on recent performance within the current Mastery Window when taking new quizzes.',
+               'reset-all-data',
+               'Reset Everything',
+               'destructive-primary'
+            ))
+         }
+      )
    },
 
    createImportExportSection() {
-      let section = document.createElement('div')
-      section.className = 'settings-section'
-      
-      // Header
-      let header = document.createElement('div')
-      header.className = 'settings-section-header'
-      
-      let title = document.createElement('h2')
-      title.className = 'settings-section-title'
-      title.innerText = 'Import / Export'
-      header.appendChild(title)
-      
-      let description = document.createElement('p')
-      description.className = 'settings-section-description'
-      description.innerText = 'Export your learning data for backup or transfer to another device. Import options will be available in future updates.'
-      header.appendChild(description)
-      
-      section.appendChild(header)
-      
-      // Content
-      let content = document.createElement('div')
-      content.className = 'settings-section-content'
-      
-      // Export Data
-      content.appendChild(this.createActionItem(
-         'Export Learning Data',
-         'Download your quiz history and mastery progress as a backup file. This allows you to keep a record before resetting or for transfer to another device.',
-         'export-data',
-         'Export Data',
-         'secondary'
-      ))
-      
-      section.appendChild(content)
-      
-      return section
+      return this.createCollapsibleSection(
+         'import-export',
+         'Import / Export',
+         'Export your learning data for backup or transfer to another device. Import options will be available in future updates.',
+         (content) => {
+            // Export Data
+            content.appendChild(this.createActionItem(
+               'Export Learning Data',
+               'Download your quiz history and mastery progress as a backup file. This allows you to keep a record before resetting or for transfer to another device.',
+               'export-data',
+               'Export Data',
+               'secondary'
+            ))
+         }
+      )
    },
 
    createSettingItem(label, description, settingKey, inputType, validation, unit) {
