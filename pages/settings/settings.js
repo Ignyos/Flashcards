@@ -22,6 +22,9 @@ page = {
       // Performance Tracking section
       settingsContainer.appendChild(this.createPerformanceTrackingSection())
       
+      // Data Management section
+      settingsContainer.appendChild(this.createDataManagementSection())
+      
       // Button container
       let buttonContainer = document.createElement('div')
       buttonContainer.className = 'button-container'
@@ -162,6 +165,71 @@ page = {
       return section
    },
 
+   createDataManagementSection() {
+      let section = document.createElement('div')
+      section.className = 'settings-section'
+      
+      // Header
+      let header = document.createElement('div')
+      header.className = 'settings-section-header'
+      
+      let title = document.createElement('h2')
+      title.className = 'settings-section-title'
+      title.innerText = 'Data Management'
+      header.appendChild(title)
+      
+      let description = document.createElement('p')
+      description.className = 'settings-section-description'
+      description.innerText = 'Manage your learning history and reset progress data. Use these options to start fresh or clean up old data.'
+      header.appendChild(description)
+      
+      section.appendChild(header)
+      
+      // Content
+      let content = document.createElement('div')
+      content.className = 'settings-section-content'
+      
+      // Clear Quiz History
+      content.appendChild(this.createActionItem(
+         'Clear Quiz History',
+         'Delete all completed quizzes and their results. This will remove all quiz data from your statistics but will not affect mastery progress.',
+         'clear-quiz-history',
+         'Clear History',
+         'destructive'
+      ))
+      
+      // Reset Mastery Data
+      content.appendChild(this.createActionItem(
+         'Reset Old Mastery Progress',
+         'Clear old question mastery data and reset the learning progress for all cards.\n NOTE: This only clears mastery records from before the current Mastery Window. Cards with recent correct answers within the Mastery Window will be retained.',
+         'reset-mastery-data',
+         'Reset Old Mastery',
+         'destructive'
+      ))
+      
+      // Reset All Data
+      content.appendChild(this.createActionItem(
+         'Reset All Learning Data',
+         'Complete reset: delete all quiz history AND mastery progress. This clears all historical learning data but cards may still be re-detected as mastered based on recent performance within the current Mastery Window when taking new quizzes.',
+         'reset-all-data',
+         'Reset Everything',
+         'destructive-primary'
+      ))
+      
+      // Export Data
+      content.appendChild(this.createActionItem(
+         'Export Learning Data',
+         'Download your quiz history and mastery progress as a backup file. This allows you to keep a record before resetting or for transfer to another device.',
+         'export-data',
+         'Export Data',
+         'secondary'
+      ))
+      
+      section.appendChild(content)
+      
+      return section
+   },
+
    createSettingItem(label, description, settingKey, inputType, validation, unit) {
       let item = document.createElement('div')
       item.className = 'setting-item'
@@ -210,6 +278,165 @@ page = {
       item.appendChild(control)
       
       return item
+   },
+
+   createActionItem(label, description, actionId, buttonText, buttonClass) {
+      let item = document.createElement('div')
+      item.className = 'setting-item action-item'
+      
+      // Info section
+      let info = document.createElement('div')
+      info.className = 'setting-info'
+      
+      let labelEle = document.createElement('div')
+      labelEle.className = 'setting-label'
+      labelEle.innerText = label
+      info.appendChild(labelEle)
+      
+      let desc = document.createElement('div')
+      desc.className = 'setting-description'
+      desc.innerText = description
+      info.appendChild(desc)
+      
+      item.appendChild(info)
+      
+      // Control section with button
+      let control = document.createElement('div')
+      control.className = 'setting-control action-control'
+      
+      let button = document.createElement('button')
+      button.className = `action-button ${buttonClass}`
+      button.innerText = buttonText
+      button.id = actionId
+      button.addEventListener('click', () => this.handleDataAction(actionId))
+      control.appendChild(button)
+      
+      item.appendChild(control)
+      
+      return item
+   },
+
+   async handleDataAction(actionId) {
+      try {
+         switch (actionId) {
+            case 'clear-quiz-history':
+               if (await this.confirmDataAction('Clear Quiz History', 'This will permanently delete all quiz history and statistics. Your mastery progress will be preserved.')) {
+                  await this.clearQuizHistory()
+                  alert('Quiz history has been cleared successfully.')
+               }
+               break
+
+            case 'reset-mastery-data':
+               if (await this.confirmDataAction('Reset Mastery Progress', 'This will reset all question mastery progress. All cards will be treated as new questions again.')) {
+                  await this.resetMasteryData()
+                  alert('Mastery progress has been reset successfully.')
+               }
+               break
+
+            case 'reset-all-data':
+               if (await this.confirmDataAction('Reset All Learning Data', 'This will delete ALL quiz history AND mastery progress. This cannot be undone!', true)) {
+                  await this.resetAllData()
+                  alert('All learning data has been reset successfully.')
+               }
+               break
+
+            case 'export-data':
+               await this.exportData()
+               break
+
+            default:
+               console.error('Unknown data action:', actionId)
+         }
+      } catch (error) {
+         console.error('Error performing data action:', error)
+         alert('An error occurred while performing this action. Please try again.')
+      }
+   },
+
+   async confirmDataAction(title, message, isHighRisk = false) {
+      const confirmation = isHighRisk ? 
+         prompt(`${title}\n\n${message}\n\nType "RESET" to confirm:`) :
+         confirm(`${title}\n\n${message}\n\nAre you sure you want to continue?`)
+      
+      if (isHighRisk) {
+         return confirmation === "RESET"
+      }
+      return confirmation
+   },
+
+   async clearQuizHistory() {
+      const accountId = stateMgr.account.id
+      
+      // Delete all quizzes for this account
+      await dbCtx.quiz.deleteAllForAccount(accountId)
+      
+      // Delete all question answers for this account  
+      await dbCtx.questionAnswer.deleteAllForAccount(accountId)
+      
+      // Reload stats data if on stats page
+      if (stateMgr.account?.state?.currentPage === pages.STATS) {
+         await stateMgr.loadStatsPage()
+      }
+   },
+
+   async resetMasteryData() {
+      const accountId = stateMgr.account.id
+      
+      // Clear mastery data from all account decks
+      if (stateMgr.decks) {
+         for (let deck of stateMgr.decks) {
+            deck.masteredCardIds = []
+            await dbCtx.accountDeck.update(deck)
+         }
+      }
+      
+      // Update the selected decks have cards check
+      if (stateMgr.checkSelectedDecksHaveCards) {
+         await stateMgr.checkSelectedDecksHaveCards()
+         await app.initSiteHeader()
+      }
+   },
+
+   async resetAllData() {
+      // Clear both quiz history and mastery data
+      await this.clearQuizHistory()
+      await this.resetMasteryData()
+   },
+
+   async exportData() {
+      try {
+         const accountId = stateMgr.account.id
+         
+         // Gather all data
+         const exportData = {
+            exportDate: new Date().toISOString(),
+            accountName: stateMgr.account.name,
+            quizHistory: await dbCtx.quiz.allForAccount(accountId),
+            questionAnswers: await dbCtx.questionAnswer.allForAccount(accountId),
+            masteryData: stateMgr.decks ? stateMgr.decks.map(deck => ({
+               deckId: deck.deckId,
+               deckTitle: deck.title,
+               masteredCardIds: deck.masteredCardIds
+            })) : [],
+            settings: stateMgr.account.settings
+         }
+         
+         // Create and download file
+         const dataStr = JSON.stringify(exportData, null, 2)
+         const dataBlob = new Blob([dataStr], { type: 'application/json' })
+         
+         const link = document.createElement('a')
+         link.href = URL.createObjectURL(dataBlob)
+         link.download = `flashcards-data-${stateMgr.account.name}-${new Date().toISOString().split('T')[0]}.json`
+         document.body.appendChild(link)
+         link.click()
+         document.body.removeChild(link)
+         
+         alert('Learning data has been exported successfully.')
+      } catch (error) {
+         console.error('Error exporting data:', error)
+         alert('Failed to export data. Please try again.')
+      }
    },
 
    onSettingChange(settingKey, value) {

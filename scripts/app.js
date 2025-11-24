@@ -220,8 +220,8 @@ class SiteHeader {
       e.id = 'site-header'
       e.appendChild(await this.getMenuButton())
       
-      // Add Quiz Me! button if on flashcards page
-      if (stateMgr.account?.state?.currentPage === pages.FLASH_CARDS) {
+      // Add Quiz Me! button on all pages except Quiz page
+      if (stateMgr.account?.state?.currentPage !== pages.QUIZ) {
          e.appendChild(this.getQuizMeButton())
          e.classList.add('four-column')
       } else {
@@ -307,6 +307,7 @@ class SiteHeader {
       
       const currentPage = stateMgr.account?.state?.currentPage
       
+      // Home
       let enabled = currentPage != pages.QUIZ && currentPage != pages.HOME
       let isCurrentPage = currentPage === pages.HOME
       let homeBtn = this.getMenuItem("Home", false, enabled, isCurrentPage)
@@ -315,6 +316,36 @@ class SiteHeader {
 
       ul.appendChild(document.createElement('hr'))
       
+      // Flashcards
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
+      isCurrentPage = currentPage === pages.FLASH_CARDS
+      let fcBtn = this.getMenuItem("Flashcards", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(fcBtn, pages.FLASH_CARDS)
+      ul.appendChild(fcBtn)
+
+      // Quick Quiz (formerly Quiz Me!)
+      enabled = this.quizBtnEnabled
+      isCurrentPage = currentPage === pages.QUIZ
+      let quickQuiz = this.getMenuItem("Quick Quiz", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(quickQuiz, pages.QUIZ, () => stateMgr.createNewQuiz())
+      ul.appendChild(quickQuiz)
+
+      // Custom Quiz (placeholder for future implementation)
+      enabled = false // TODO: Implement custom quiz logic
+      let customQuiz = this.getMenuItem("Custom Quiz", false, enabled, false)
+      // TODO: Add custom quiz functionality
+      ul.appendChild(customQuiz)
+
+      // Stats
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.STATS
+      isCurrentPage = currentPage === pages.STATS
+      let statsBtn = this.getMenuItem("Stats", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(statsBtn, pages.STATS)
+      ul.appendChild(statsBtn)
+
+      ul.appendChild(document.createElement('hr'))
+      
+      // New Student
       enabled = currentPage != pages.QUIZ
       let newAcct = this.getMenuItem("New Student", false, enabled)
       newAcct.addEventListener('click', () => {
@@ -322,11 +353,13 @@ class SiteHeader {
       })
       ul.appendChild(newAcct)
 
+      // Switch Student
       enabled = stateMgr.accounts?.length > 1 && currentPage != pages.QUIZ
       let acctSubMenu = false
       if (enabled) acctSubMenu = await this.getAcctSubMenu()
       ul.appendChild(this.getMenuItem("Switch Student" , acctSubMenu, enabled))
 
+      // Manage Students
       enabled = stateMgr.accounts?.length > 0 && currentPage != pages.QUIZ && currentPage != pages.STUDENTS
       isCurrentPage = currentPage === pages.STUDENTS
       let manageStudents = this.getMenuItem("Manage Students", false, enabled, isCurrentPage)
@@ -335,29 +368,12 @@ class SiteHeader {
 
       ul.appendChild(document.createElement('hr'))
       
-      enabled = this.quizBtnEnabled
-      isCurrentPage = currentPage === pages.QUIZ
-      let quizMe = this.getMenuItem("Quiz Me!", false, enabled, isCurrentPage)
-      if (enabled) this.addPageSwitcher(quizMe, pages.QUIZ, () => stateMgr.createNewQuiz())
-      ul.appendChild(quizMe)
-
-      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.STATS
-      isCurrentPage = currentPage === pages.STATS
-      let statsBtn = this.getMenuItem("Stats", false, enabled, isCurrentPage)
-      if (enabled) this.addPageSwitcher(statsBtn, pages.STATS)
-      ul.appendChild(statsBtn)
-
+      // Settings
       enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.SETTINGS
       isCurrentPage = currentPage === pages.SETTINGS
       let settingsBtn = this.getMenuItem("Settings", false, enabled, isCurrentPage)
       if (enabled) this.addPageSwitcher(settingsBtn, pages.SETTINGS)
       ul.appendChild(settingsBtn)
-
-      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.FLASH_CARDS
-      isCurrentPage = currentPage === pages.FLASH_CARDS
-      let fcBtn = this.getMenuItem("Flash Cards", false, enabled, isCurrentPage)
-      if (enabled) this.addPageSwitcher(fcBtn, pages.FLASH_CARDS)
-      ul.appendChild(fcBtn)
 
       e.appendChild(ul)
       return e

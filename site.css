@@ -309,6 +309,7 @@ background-repeat: no-repeat;
 
 .modal.confirm .msg {
     font-size: 1.6em;
+    margin-bottom: 1rem;
 }
 
 .modal .msg {

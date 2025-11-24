@@ -20,6 +20,9 @@
 #quiz-pane.results {
    display: grid;
    grid-template-rows: auto 1fr;
+   min-width: 50%;
+   max-width: 50rem;
+   margin: 0 auto;
 }
 
 #quiz-pane.in-progress {

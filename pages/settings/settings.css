@@ -205,3 +205,66 @@
       padding: 1rem;
    }
 }
+
+/* Data Management Action Items */
+.action-button {
+   border: none;
+   border-radius: 0.375rem;
+   cursor: pointer;
+   font-size: 0.9rem;
+   font-weight: 500;
+   padding: 0.75rem 1.5rem;
+   transition: all 0.2s ease;
+   min-width: 120px;
+   text-align: center;
+   outline: none;
+}
+
+.action-button:hover {
+   transform: translateY(-1px);
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:active {
+   transform: translateY(0);
+}
+
+/* Secondary action button (Export Data) */
+.action-button.secondary {
+   background: rgba(106, 90, 205, 0.2);
+   border: 1px solid rgba(106, 90, 205, 0.4);
+   color: rgba(106, 90, 205, 0.9);
+}
+
+.action-button.secondary:hover {
+   background: rgba(106, 90, 205, 0.3);
+   border-color: rgba(106, 90, 205, 0.6);
+   color: rgba(106, 90, 205, 1);
+}
+
+/* Destructive action buttons */
+.action-button.destructive {
+   background: rgba(255, 107, 107, 0.2);
+   border: 1px solid rgba(255, 107, 107, 0.4);
+   color: rgba(255, 107, 107, 0.9);
+}
+
+.action-button.destructive:hover {
+   background: rgba(255, 107, 107, 0.3);
+   border-color: rgba(255, 107, 107, 0.6);
+   color: rgba(255, 107, 107, 1);
+}
+
+/* Primary destructive action (Reset Everything) */
+.action-button.destructive-primary {
+   background: rgba(220, 38, 38, 0.3);
+   border: 1px solid rgba(220, 38, 38, 0.5);
+   color: rgba(255, 255, 255, 0.95);
+   font-weight: 600;
+}
+
+.action-button.destructive-primary:hover {
+   background: rgba(220, 38, 38, 0.4);
+   border-color: rgba(220, 38, 38, 0.7);
+   color: white;
+}

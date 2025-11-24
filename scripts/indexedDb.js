@@ -659,6 +659,77 @@ const dbCtx = {
          } catch (error) {
             console.error(error);
          }
+      },
+
+      /**
+       * Delete all question answers for a specific account
+       * @param {string} accountId 
+       */
+      async deleteAllForAccount(accountId) {
+         try {
+            const store = getObjectStore(stores.QUESTION_ANSWER, "readwrite");
+            const request = store.getAll();
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const allAnswers = event.target.result;
+                  const accountAnswers = allAnswers.filter(answer => answer.accountId === accountId);
+                  let deleteCount = 0;
+                  let totalCount = accountAnswers.length;
+
+                  if (totalCount === 0) {
+                     resolve();
+                     return;
+                  }
+
+                  accountAnswers.forEach(answer => {
+                     const deleteRequest = store.delete(answer.id);
+                     deleteRequest.onsuccess = function() {
+                        deleteCount++;
+                        if (deleteCount === totalCount) {
+                           resolve();
+                        }
+                     };
+                     deleteRequest.onerror = function() {
+                        reject("Failed to delete answer: " + answer.id);
+                     };
+                  });
+               };
+
+               request.onerror = function(event) {
+                  reject("Failed to retrieve answers for account");
+               };
+            });
+         } catch (error) {
+            console.error('Error deleting all answers for account:', error);
+            throw error;
+         }
+      },
+
+      /**
+       * Get all question answers for a specific account without date filtering
+       * @param {string} accountId 
+       */
+      async allForAccount(accountId) {
+         try {
+            const store = getObjectStore(stores.QUESTION_ANSWER, "readonly");
+            const request = store.getAll();
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const allAnswers = event.target.result;
+                  const filteredAnswers = allAnswers.filter(answer => answer.accountId === accountId);
+                  resolve(filteredAnswers);
+               };
+
+               request.onerror = function(event) {
+                  reject("Answers not found");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            return [];
+         }
       }
    },
    quiz: {
@@ -1167,6 +1238,59 @@ const dbCtx = {
                correctAnswers
             }
          })
+      },
+
+      /**
+       * Delete all quizzes for a specific account
+       * @param {string} accountId 
+       */
+      async deleteAllForAccount(accountId) {
+         try {
+            const store = getObjectStore(stores.QUIZ, "readwrite");
+            const index = store.index("accountId");
+            const request = index.getAll(accountId);
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const quizzes = event.target.result;
+                  let deleteCount = 0;
+                  let totalCount = quizzes.length;
+
+                  if (totalCount === 0) {
+                     resolve();
+                     return;
+                  }
+
+                  quizzes.forEach(quiz => {
+                     const deleteRequest = store.delete(quiz.id);
+                     deleteRequest.onsuccess = function() {
+                        deleteCount++;
+                        if (deleteCount === totalCount) {
+                           resolve();
+                        }
+                     };
+                     deleteRequest.onerror = function() {
+                        reject("Failed to delete quiz: " + quiz.id);
+                     };
+                  });
+               };
+
+               request.onerror = function(event) {
+                  reject("Failed to retrieve quizzes for account");
+               };
+            });
+         } catch (error) {
+            console.error('Error deleting all quizzes for account:', error);
+            throw error;
+         }
+      },
+
+      /**
+       * Get all quizzes for a specific account (alias for byAccountId)
+       * @param {string} accountId 
+       */
+      async allForAccount(accountId) {
+         return await this.byAccountId(accountId);
       }
    },
    deck: {
