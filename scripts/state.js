@@ -1,6 +1,7 @@
 const pages = {
-   HOME: "home",
+   CUSTOM_QUIZ: "customQuiz",
    FLASH_CARDS: "flashcards",
+   HOME: "home",
    QUIZ: "quiz",
    SETTINGS: "settings",
    STATS: "stats",
@@ -87,6 +88,9 @@ class StateManager {
             break
          case pages.STATS:
             await this.loadStatsPage()
+            break
+         case pages.CUSTOM_QUIZ:
+            await this.loadCustomQuizPage()
             break
          case pages.STUDENTS:
             // Students page handles its own loading
@@ -378,6 +382,10 @@ class StateManager {
 
    async loadStatsPage() {
       // Stats page handles its own data loading
+   }
+
+   async loadCustomQuizPage() {
+      // Custom quiz page handles its own data loading
    }
 
    get statsView() {

@@ -10,7 +10,7 @@ class App {
       await this.initSiteHeader()
       await this.loadPage()
       await this.sendActivityLog()
-   }F
+   }
 
    async sendActivityLog()
    {
@@ -118,6 +118,7 @@ class App {
       result[pages.SETTINGS] = 0;
       result[pages.STATS] = 0;
       result[pages.STUDENTS] = 0;
+      result[pages.CUSTOM_QUIZ] = 0;
       return result
    }
 
@@ -325,17 +326,18 @@ class SiteHeader {
       if (enabled) this.addPageSwitcher(fcBtn, pages.FLASH_CARDS)
       ul.appendChild(fcBtn)
 
-      // Quick Quiz (formerly Quiz Me!)
+      // Quiz Me!
       enabled = this.quizBtnEnabled
       isCurrentPage = currentPage === pages.QUIZ
-      let quickQuiz = this.getMenuItem("Quick Quiz", false, enabled, isCurrentPage)
-      if (enabled) this.addPageSwitcher(quickQuiz, pages.QUIZ, () => stateMgr.createNewQuiz())
-      ul.appendChild(quickQuiz)
+      let quizMe = this.getMenuItem("Quiz Me!", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(quizMe, pages.QUIZ, () => stateMgr.createNewQuiz())
+      ul.appendChild(quizMe)
 
-      // Custom Quiz (placeholder for future implementation)
-      enabled = false // TODO: Implement custom quiz logic
-      let customQuiz = this.getMenuItem("Custom Quiz", false, enabled, false)
-      // TODO: Add custom quiz functionality
+      // Custom Quiz
+      enabled = stateMgr.account && currentPage != pages.QUIZ && currentPage != pages.CUSTOM_QUIZ
+      isCurrentPage = currentPage === pages.CUSTOM_QUIZ
+      let customQuiz = this.getMenuItem("Custom Quiz", false, enabled, isCurrentPage)
+      if (enabled) this.addPageSwitcher(customQuiz, pages.CUSTOM_QUIZ)
       ul.appendChild(customQuiz)
 
       // Stats

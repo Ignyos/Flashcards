@@ -5,11 +5,12 @@ const stores = {
    CARD: "card",
    QUESTION_ANSWER: "questionAnswer",
    QUIZ: "quiz",
-   DECK: "deck"
+   DECK: "deck",
+   CUSTOM_QUIZ: "customQuiz"
 }
 
 let db;
-const request = indexedDB.open("ignyos.flashcards", 2);
+const request = indexedDB.open("ignyos.flashcards", 3);
 
 request.onupgradeneeded = function(event) {
    db = event.target.result;
@@ -23,25 +24,46 @@ request.onupgradeneeded = function(event) {
       }
    }
 
-   const accountStore = db.createObjectStore(stores.ACCOUNT, { keyPath: "id" });
-   accountStore.createIndex("name", "name", { unique: true });
+   // Create object stores only if they don't exist
+   if (!db.objectStoreNames.contains(stores.ACCOUNT)) {
+      const accountStore = db.createObjectStore(stores.ACCOUNT, { keyPath: "id" });
+      accountStore.createIndex("name", "name", { unique: true });
+   }
 
-   const accountDeckStore = db.createObjectStore(stores.ACCOUNT_DECK, { keyPath: ["accountId", "deckId"] });
-   accountDeckStore.createIndex("accountId", "accountId", { unique: false });
+   if (!db.objectStoreNames.contains(stores.ACCOUNT_DECK)) {
+      const accountDeckStore = db.createObjectStore(stores.ACCOUNT_DECK, { keyPath: ["accountId", "deckId"] });
+      accountDeckStore.createIndex("accountId", "accountId", { unique: false });
+   }
 
-   const metaDataStore = db.createObjectStore(stores.METADATA, { keyPath: "id" });
-   metaDataStore.add({ id: 1, selectedAccountId: '' });
+   if (!db.objectStoreNames.contains(stores.METADATA)) {
+      const metaDataStore = db.createObjectStore(stores.METADATA, { keyPath: "id" });
+      metaDataStore.add({ id: 1, selectedAccountId: '' });
+   }
 
-   const cardStore = db.createObjectStore(stores.CARD, { keyPath: "id" });
-   cardStore.createIndex("deckId", "deckId", { unique: false });
+   if (!db.objectStoreNames.contains(stores.CARD)) {
+      const cardStore = db.createObjectStore(stores.CARD, { keyPath: "id" });
+      cardStore.createIndex("deckId", "deckId", { unique: false });
+   }
 
-   const questionAnswerStore = db.createObjectStore(stores.QUESTION_ANSWER, { keyPath: "id" });
-   questionAnswerStore.createIndex("compsiteIndex", ["accountId", "quizId"], { unique: false });
+   if (!db.objectStoreNames.contains(stores.QUESTION_ANSWER)) {
+      const questionAnswerStore = db.createObjectStore(stores.QUESTION_ANSWER, { keyPath: "id" });
+      questionAnswerStore.createIndex("compsiteIndex", ["accountId", "quizId"], { unique: false });
+   }
 
-   const quizStore = db.createObjectStore(stores.QUIZ, { keyPath: "id" });
-   quizStore.createIndex("accountId", "accountId", { unique: false });
+   if (!db.objectStoreNames.contains(stores.QUIZ)) {
+      const quizStore = db.createObjectStore(stores.QUIZ, { keyPath: "id" });
+      quizStore.createIndex("accountId", "accountId", { unique: false });
+   }
 
-   const deckStore = db.createObjectStore(stores.DECK, { keyPath: "id" });
+   if (!db.objectStoreNames.contains(stores.DECK)) {
+      const deckStore = db.createObjectStore(stores.DECK, { keyPath: "id" });
+   }
+   
+   // Add custom quiz store for version 3+
+   if (!db.objectStoreNames.contains(stores.CUSTOM_QUIZ)) {
+      const customQuizStore = db.createObjectStore(stores.CUSTOM_QUIZ, { keyPath: "id" });
+      customQuizStore.createIndex("accountId", "accountId", { unique: false });
+   }
 };
 
 request.onsuccess = function(event) {
@@ -1517,6 +1539,89 @@ const dbCtx = {
          } catch (error) {
             console.error(error);
             resolve(false);
+         }
+      }
+   },
+
+   customQuiz: {
+      async list(accountId) {
+         try {
+            const store = getObjectStore(stores.CUSTOM_QUIZ, "readonly");
+            const index = store.index("accountId");
+            const request = index.getAll(accountId);
+
+            return await new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  const customQuizzes = event.target.result;
+                  // Sort by creation date, newest first
+                  customQuizzes.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
+                  resolve(customQuizzes.map(quiz => new CustomQuiz(quiz)));
+               };
+
+               request.onerror = function(event) {
+                  reject("Custom quizzes not found");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+            return [];
+         }
+      },
+
+      async add(customQuiz) {
+         try {
+            const store = getObjectStore(stores.CUSTOM_QUIZ, "readwrite");
+            const request = store.add(customQuiz);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Custom quiz not added");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+         }
+      },
+
+      async update(customQuiz) {
+         try {
+            const store = getObjectStore(stores.CUSTOM_QUIZ, "readwrite");
+            const request = store.put(customQuiz);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Custom quiz not updated");
+               };
+            });
+         } catch (error) {
+            console.error(error);
+         }
+      },
+
+      async delete(customQuizId) {
+         try {
+            const store = getObjectStore(stores.CUSTOM_QUIZ, "readwrite");
+            const request = store.delete(customQuizId);
+
+            return new Promise((resolve, reject) => {
+               request.onsuccess = function(event) {
+                  resolve();
+               };
+
+               request.onerror = function(event) {
+                  reject("Custom quiz not deleted");
+               };
+            });
+         } catch (error) {
+            console.error(error);
          }
       }
    }
