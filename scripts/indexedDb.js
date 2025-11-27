@@ -1330,9 +1330,10 @@ const dbCtx = {
             // Get quiz details to know which decks were involved
             if (!quiz) return
             
-            const selectedDecks = await this._getSelectedAccountDecks(accountId)
+            // Get ALL account decks (not just selected ones) for decks involved in the quiz
+            const allAccountDecks = await dbCtx.accountDeck.all(accountId)
             const quizDeckIds = quiz.allDeckIds
-            const relevantDecks = selectedDecks.filter(deck => quizDeckIds.includes(deck.deckId))
+            const relevantDecks = allAccountDecks.filter(deck => quizDeckIds.includes(deck.deckId))
             
             // For each deck involved in the quiz, check for newly mastered cards
             for (const deck of relevantDecks) {

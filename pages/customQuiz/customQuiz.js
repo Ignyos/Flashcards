@@ -78,14 +78,20 @@ page = {
    },
 
    async loadCardStatistics() {
-      // Similar to stats page, load performance data for all cards
+      // Similar to stats page, load performance data for all cards using recent answers only
+      const masteryThreshold = stateMgr.account.settings.masteryStreakCount
+      
       for (const deck of this.allDecks) {
          try {
             const cards = await dbCtx.card.byDeckId(deck.deckId)
             const deckAnswers = await dbCtx.questionAnswer.allForAccount(stateMgr.account.id)
             
             for (const card of cards) {
-               const cardAnswers = deckAnswers.filter(answer => answer.cardId === card.id)
+               // Use only the most recent n answers for each card (same as Stats page)
+               const cardAnswers = deckAnswers
+                  .filter(answer => answer.cardId === card.id)
+                  .sort((a, b) => new Date(b.id) - new Date(a.id)) // Most recent first
+                  .slice(0, masteryThreshold) // Take only the most recent n
                
                let successRate = null
                if (cardAnswers.length > 0) {
@@ -371,6 +377,9 @@ page = {
          // Set as current quiz and navigate
          stateMgr.quiz = quiz
          await stateMgr.setPage(pages.QUIZ)
+         // Clear the page content to ensure clean loading
+         let pgEle = document.getElementById('page')
+         if (pgEle) pgEle.innerHTML = null
          app.route()
          
       } catch (error) {

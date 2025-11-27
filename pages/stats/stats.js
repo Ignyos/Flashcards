@@ -215,19 +215,35 @@ page = {
       const uniqueQuizIds = [...new Set(deckAnswers.map(answer => answer.quizId))]
       const quizCount = uniqueQuizIds.length
       
-      // Calculate deck-level average based only on answers to cards from this deck
-      let averageScore = 0
-      if (deckAnswers.length > 0) {
-         const correctAnswers = deckAnswers.filter(a => a.answeredCorrectly).length
-         averageScore = Math.round((correctAnswers / deckAnswers.length) * 100)
+      // Get the mastery threshold setting for limiting calculation to recent answers
+      const masteryThreshold = account.settings.masteryStreakCount
+      
+      // Calculate deck-level average based only on the most recent n answers per card
+      const recentDeckAnswers = []
+      for (const card of deckCards) {
+         const cardAnswers = deckAnswers
+            .filter(answer => answer.cardId === card.id)
+            .sort((a, b) => new Date(b.id) - new Date(a.id)) // Most recent first
+            .slice(0, masteryThreshold) // Take only the most recent n
+         
+         recentDeckAnswers.push(...cardAnswers)
       }
       
-      // Calculate card-level statistics
+      let averageScore = 0
+      if (recentDeckAnswers.length > 0) {
+         const correctAnswers = recentDeckAnswers.filter(a => a.answeredCorrectly).length
+         averageScore = Math.round((correctAnswers / recentDeckAnswers.length) * 100)
+      }
+      
+      // Calculate card-level statistics using the same recent-only logic
       const cardStats = []
       const masteredCardIds = deckListItem.masteredCardIds || []
       
       for (const card of deckCards) {
-         const cardAnswers = deckAnswers.filter(answer => answer.cardId === card.id)
+         const cardAnswers = deckAnswers
+            .filter(answer => answer.cardId === card.id)
+            .sort((a, b) => new Date(b.id) - new Date(a.id)) // Most recent first
+            .slice(0, masteryThreshold) // Take only the most recent n
          
          let successRate = null
          if (cardAnswers.length > 0) {
