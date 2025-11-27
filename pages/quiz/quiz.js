@@ -58,6 +58,9 @@ page = {
 
    async loadNextQuestion() {
       let q = document.getElementById('question')
+      let a = document.getElementById('answer')
+      let controls = document.getElementById('controls')
+      
       let id = stateMgr.getNextCardId()
       
       if (!id) {
@@ -67,6 +70,18 @@ page = {
       
       stateMgr.card = await dbCtx.card.get(id)
       q.innerText = stateMgr.card.phrase
+      
+      // Reset the UI for the new question
+      a.innerText = ''
+      controls.classList.add('invisible')
+      
+      // Update the question counter
+      let counter = document.querySelector('.navigation .pill')
+      if (counter && counter.innerText.startsWith('Q:')) {
+         let n = stateMgr.quiz.answeredCardIds.length + 1
+         let total = stateMgr.quiz.allCardIds.length
+         counter.innerText = `Q: ${n} of ${total}`
+      }
    },
 
    get questionEle() {
@@ -143,7 +158,8 @@ page = {
          navigation.loadQuizResults(questions)
          await this.loadQuizResults(questions)
       } else {
-         await app.route()
+         // Load next question directly - no need to route since we're staying on the quiz page
+         await this.loadNextQuestion()
       }
    },
 
@@ -154,6 +170,9 @@ page = {
          await dbCtx.quiz.quit(stateMgr.account.id, stateMgr.quiz.id)
          stateMgr.quiz = {id: 0, startDateUTC: null, allCardIds: [], answeredCardIds: []}
          await stateMgr.setPage(pages.FLASH_CARDS)
+         // Clear the page content to ensure clean loading
+         let pgEle = document.getElementById('page')
+         if (pgEle) pgEle.innerHTML = null
          await app.route()
       },'Really?\n\nYou want to quit?')
    }
@@ -198,6 +217,9 @@ navigation = {
       ele.innerText = 'Close'
       ele.addEventListener('click',async () => {
          await stateMgr.setPage(pages.FLASH_CARDS)
+         // Clear the page content to ensure clean loading
+         let pgEle = document.getElementById('page')
+         if (pgEle) pgEle.innerHTML = null
          await app.route()
       })
       return ele
@@ -207,7 +229,7 @@ navigation = {
       let ele = document.createElement('div')
       let n = stateMgr.quiz.answeredCardIds.length + 1
       let total = stateMgr.quiz.allCardIds.length
-      ele.innerText= `Question ${n} of ${total}`
+      ele.innerText= `Q: ${n} of ${total}`
       ele.id = 'question-counter'
       return ele
    },

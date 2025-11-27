@@ -278,8 +278,13 @@ class SiteHeader {
       ele.id = 'create-quiz'
       if (enabled) {
          ele.addEventListener('click', async () => {
+            // Remove any open menus first (like main menu does)
+            this.removeMenus()
             await stateMgr.createNewQuiz()
             await stateMgr.setPage(pages.QUIZ)
+            // Clear the page content to ensure clean loading
+            let pgEle = document.getElementById('page')
+            if (pgEle) pgEle.innerHTML = null
             await app.route()
          })
       }

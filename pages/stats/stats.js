@@ -271,7 +271,7 @@ page = {
       let content = `
          <div class="deck-summary">
             <div class="stat-item">Cards answered in ${quizCount} quizzes over the last ${daysBack} days</div>
-            <div class="stat-item">Deck average: ${averageScore}% correct</div>
+            ${allMastered ? '' : `<div class="stat-item">Deck average: ${averageScore}% correct</div>`}
             ${allMastered ? '<div class="stat-item mastery-message">🎉 You\'re a master of this topic!</div>' : ''}
          </div>
          <div class="card-stats">
