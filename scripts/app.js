@@ -89,7 +89,10 @@ class App {
                scr.setAttribute('type','text/javascript')
                scr.setAttribute('src',`${resource.src}?v=${resource.version}`)
                scr.addEventListener('load',() => {
-                  resolve(page)
+                  // Add 500ms delay to prevent flash of unstyled content
+                  setTimeout(() => {
+                     resolve(page)
+                  }, 500)
                })
                document.head.appendChild(scr)
             }
