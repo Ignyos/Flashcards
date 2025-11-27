@@ -272,13 +272,7 @@ page = {
       
       // Add separator and mastered cards if there are any
       if (mastered.length > 0) {
-         content += `
-            </div>
-            <div class="mastery-separator">
-               <hr>
-            </div>
-            <div class="card-list">
-         `
+         content += ''
          
          // Display mastered cards
          for (const cardStat of mastered) {

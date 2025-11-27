@@ -62,6 +62,9 @@ page = {
          // Load all account decks (not just selected ones)
          this.allDecks = await dbCtx.accountDeck.list(stateMgr.account.id)
          
+         // Sort decks alphabetically by title
+         this.allDecks.sort((a, b) => a.title.localeCompare(b.title))
+         
          // Load card statistics for all decks
          await this.loadCardStatistics()
       } catch (error) {

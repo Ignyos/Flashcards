@@ -1,23 +1,16 @@
 /* Settings Page Styles */
 #page h1 {
    text-align: center;
-   margin: 1rem 0 2rem 0;
+   margin: 1rem 0 0 0;
    color: #fff;
    font-size: 2rem;
    flex-shrink: 0; /* Keep title fixed size */
 }
 
 .settings-container {
-   /* display: flex; */
-   /* flex-direction: column; */
-   /* gap: 0; */
    max-width: 50rem;
    margin: 0 auto;
-   /* width: 100%; */
-   /* flex: 1; */
    overflow-y: auto; /* Scroll the settings content */
-   /* min-height: 0; */
-   /* padding-right: 0.5rem; */
    padding-bottom: 2rem; /* Extra space at bottom for better scrolling experience */
 }
 
@@ -161,8 +154,13 @@
    gap: 1rem;
    justify-content: center;
    align-items: center;
-   margin: 2rem auto 0;
    flex-wrap: wrap;
+   height: 7rem;
+}
+
+/* Top button container styling */
+.button-container.top-buttons {
+   margin: 1rem auto 1.5rem;
 }
 
 .save-button {
@@ -172,10 +170,8 @@
    color: rgba(70, 163, 255, 0.9);
    cursor: pointer;
    font-size: 1rem;
-   font-weight: 500;
-   padding: 0.75rem 2rem;
+   padding: 0.5rem 1rem;
    transition: all 0.2s ease;
-   min-height: fit-content;
 }
 
 .save-button:hover {
@@ -197,8 +193,7 @@
    color: rgba(255, 100, 100, 0.9);
    cursor: pointer;
    font-size: 1rem;
-   font-weight: 500;
-   padding: 0.75rem 1.5rem;
+   padding: 0.5rem 1rem;
    transition: all 0.2s ease;
    min-height: fit-content;
 }
@@ -249,13 +244,12 @@
    font-weight: 500;
    padding: 0.75rem 1.5rem;
    transition: all 0.2s ease;
-   min-width: 120px;
+   min-width: 13rem;
    text-align: center;
    outline: none;
 }
 
 .action-button:hover {
-   transform: translateY(-1px);
    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -301,4 +295,28 @@
    background: rgba(220, 38, 38, 0.4);
    border-color: rgba(220, 38, 38, 0.7);
    color: white;
+}
+
+/* Dual Action Controls */
+.dual-action {
+   display: flex;
+   gap: 0.75rem;
+}
+
+.dual-action .action-button {
+   flex: 1;
+   min-width: 13rem;
+}
+
+.dual-action .action-button.secondary {
+   background: rgba(255, 255, 255, 0.1);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   color: rgba(255, 255, 255, 0.8);
+   font-size: 0.85rem;
+}
+
+.dual-action .action-button.secondary:hover {
+   background: rgba(255, 255, 255, 0.15);
+   border-color: rgba(255, 255, 255, 0.3);
+   color: rgba(255, 255, 255, 0.95);
 }

@@ -12,25 +12,9 @@ page = {
       title.innerText = 'Settings'
       ele.appendChild(title)
       
-      // Settings container
-      let settingsContainer = document.createElement('div')
-      settingsContainer.className = 'settings-container'
-      
-      // Quiz Generation section
-      settingsContainer.appendChild(this.createQuizGenerationSection())
-      
-      // Performance Tracking section
-      settingsContainer.appendChild(this.createPerformanceTrackingSection())
-      
-      // Learning Data Management section
-      settingsContainer.appendChild(this.createLearningDataManagementSection())
-      
-      // Import / Export section
-      settingsContainer.appendChild(this.createImportExportSection())
-      
-      // Button container
+      // Button container (moved to top)
       let buttonContainer = document.createElement('div')
-      buttonContainer.className = 'button-container'
+      buttonContainer.className = 'button-container top-buttons'
       
       // Save button
       let saveButton = document.createElement('button')
@@ -47,7 +31,23 @@ page = {
       resetButton.addEventListener('click', () => this.resetToDefaults())
       buttonContainer.appendChild(resetButton)
       
-      settingsContainer.appendChild(buttonContainer)
+      ele.appendChild(buttonContainer)
+      
+      // Settings container
+      let settingsContainer = document.createElement('div')
+      settingsContainer.className = 'settings-container'
+      
+      // Quiz Generation section
+      settingsContainer.appendChild(this.createQuizGenerationSection())
+      
+      // Performance Tracking section
+      settingsContainer.appendChild(this.createPerformanceTrackingSection())
+      
+      // Learning Data Management section
+      settingsContainer.appendChild(this.createLearningDataManagementSection())
+      
+      // Import / Export section
+      settingsContainer.appendChild(this.createImportExportSection())
       
       ele.appendChild(settingsContainer)
       
@@ -213,29 +213,32 @@ page = {
          'Manage your learning history and reset progress data. Use these options to start fresh or clean up old learning data.',
          (content) => {
             // Clear Quiz History
-            content.appendChild(this.createActionItem(
+            content.appendChild(this.createDualActionItem(
                'Clear Quiz History',
-               'Delete all completed quizzes and their results. This will remove all quiz data from your statistics but will not affect mastery progress.',
+               'Delete completed quizzes and their results. This will remove quiz data from your statistics but will not affect mastery progress.',
                'clear-quiz-history',
-               'Clear History',
+               'Clear All History',
+               'Clear Selected Decks...',
                'destructive'
             ))
             
             // Reset Mastery Data
-            content.appendChild(this.createActionItem(
+            content.appendChild(this.createDualActionItem(
                'Reset Mastery Progress',
-               'Clear all mastery progress and delete the learning history for mastered cards. This completely removes mastery records and their associated question answers.',
+               'Clear mastery progress and delete the learning history for mastered cards. This completely removes mastery records and their associated question answers.',
                'reset-mastery-data',
-               'Reset Mastery',
+               'Reset All Mastery',
+               'Reset Selected Decks...',
                'destructive'
             ))
             
             // Reset All Data
-            content.appendChild(this.createActionItem(
+            content.appendChild(this.createDualActionItem(
                'Reset All Learning Data',
                'Complete reset: delete all quiz history AND mastery progress. This clears all historical learning data but cards may still be re-detected as mastered based on recent performance within the current Mastery Window when taking new quizzes.',
                'reset-all-data',
                'Reset Everything',
+               'Reset Selected Decks...',
                'destructive-primary'
             ))
          }
@@ -346,6 +349,51 @@ page = {
       return item
    },
 
+   createDualActionItem(label, description, actionId, allButtonText, selectedButtonText, buttonClass) {
+      let item = document.createElement('div')
+      item.className = 'setting-item action-item'
+      
+      // Info section
+      let info = document.createElement('div')
+      info.className = 'setting-info'
+      
+      let labelEle = document.createElement('div')
+      labelEle.className = 'setting-label'
+      labelEle.innerText = label
+      info.appendChild(labelEle)
+      
+      let desc = document.createElement('div')
+      desc.className = 'setting-description'
+      desc.innerText = description
+      info.appendChild(desc)
+      
+      item.appendChild(info)
+      
+      // Control section with two buttons
+      let control = document.createElement('div')
+      control.className = 'setting-control action-control dual-action'
+      
+      // "All" button
+      let allButton = document.createElement('button')
+      allButton.className = `action-button ${buttonClass}`
+      allButton.innerText = allButtonText
+      allButton.id = actionId
+      allButton.addEventListener('click', () => this.handleDataAction(actionId))
+      control.appendChild(allButton)
+      
+      // "Selected" button
+      let selectedButton = document.createElement('button')
+      selectedButton.className = `action-button ${buttonClass} secondary`
+      selectedButton.innerText = selectedButtonText
+      selectedButton.id = `${actionId}-selected`
+      selectedButton.addEventListener('click', () => this.handleDataAction(`${actionId}-selected`))
+      control.appendChild(selectedButton)
+      
+      item.appendChild(control)
+      
+      return item
+   },
+
    async handleDataAction(actionId) {
       try {
          switch (actionId) {
@@ -356,6 +404,10 @@ page = {
                }
                break
 
+            case 'clear-quiz-history-selected':
+               await this.handleSelectedDecksAction('clear-quiz-history')
+               break
+
             case 'reset-mastery-data':
                if (await this.confirmDataAction('Reset Mastery Progress', 'This will completely clear all mastery progress and delete the learning history for mastered cards. This action cannot be undone.')) {
                   await this.resetMasteryData()
@@ -363,11 +415,19 @@ page = {
                }
                break
 
+            case 'reset-mastery-data-selected':
+               await this.handleSelectedDecksAction('reset-mastery-data')
+               break
+
             case 'reset-all-data':
                if (await this.confirmDataAction('Reset All Learning Data', 'This will delete ALL quiz history AND mastery progress. This cannot be undone!', true)) {
                   await this.resetAllData()
                   alert('All learning data has been reset successfully.')
                }
+               break
+
+            case 'reset-all-data-selected':
+               await this.handleSelectedDecksAction('reset-all-data')
                break
 
             case 'export-data':
@@ -485,6 +545,311 @@ page = {
          console.error('Error exporting data:', error)
          alert('Failed to export data. Please try again.')
       }
+   },
+
+   async handleSelectedDecksAction(actionType) {
+      // Show deck selection modal
+      const selectedDeckIds = await this.showDeckSelectionModal(actionType)
+      if (!selectedDeckIds || selectedDeckIds.length === 0) {
+         return // User cancelled or selected nothing
+      }
+
+      // Get deck names for confirmation
+      const selectedDeckNames = stateMgr.decks
+         .filter(deck => selectedDeckIds.includes(deck.deckId))
+         .map(deck => deck.title)
+
+      // Confirmation based on action type
+      let confirmed = false
+      switch (actionType) {
+         case 'clear-quiz-history':
+            confirmed = await this.confirmDataAction(
+               'Clear Quiz History for Selected Decks',
+               `This will permanently delete quiz history and statistics for the following decks:\n\n${selectedDeckNames.join('\n')}\n\nYour mastery progress will be preserved.`
+            )
+            if (confirmed) {
+               await this.clearQuizHistoryForDecks(selectedDeckIds)
+               alert(`Quiz history has been cleared for ${selectedDeckNames.length} deck(s).`)
+            }
+            break
+
+         case 'reset-mastery-data':
+            confirmed = await this.confirmDataAction(
+               'Reset Mastery Progress for Selected Decks',
+               `This will completely clear mastery progress and delete learning history for mastered cards in the following decks:\n\n${selectedDeckNames.join('\n')}\n\nThis action cannot be undone.`
+            )
+            if (confirmed) {
+               await this.resetMasteryDataForDecks(selectedDeckIds)
+               alert(`Mastery progress has been reset for ${selectedDeckNames.length} deck(s).`)
+            }
+            break
+
+         case 'reset-all-data':
+            confirmed = await this.confirmDataAction(
+               'Reset All Learning Data for Selected Decks',
+               `This will delete ALL quiz history AND mastery progress for the following decks:\n\n${selectedDeckNames.join('\n')}\n\nThis cannot be undone!`,
+               true
+            )
+            if (confirmed) {
+               await this.resetAllDataForDecks(selectedDeckIds)
+               alert(`All learning data has been reset for ${selectedDeckNames.length} deck(s).`)
+            }
+            break
+      }
+   },
+
+   async showDeckSelectionModal(actionType) {
+      return new Promise((resolve) => {
+         // Create modal background
+         const modalBg = document.createElement('div')
+         modalBg.className = 'deck-selection-modal-bg'
+         modalBg.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+         `
+
+         // Create modal content
+         const modal = document.createElement('div')
+         modal.className = 'deck-selection-modal'
+         modal.style.cssText = `
+            background: rgb(30, 35, 40);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #ddd;
+         `
+
+         // Modal title
+         const title = document.createElement('h2')
+         title.textContent = 'Select Decks'
+         title.style.cssText = 'margin: 0 0 1rem 0; color: #fff;'
+         modal.appendChild(title)
+
+         // Description
+         const description = document.createElement('p')
+         const actionLabels = {
+            'clear-quiz-history': 'clear quiz history for',
+            'reset-mastery-data': 'reset mastery progress for',
+            'reset-all-data': 'reset all learning data for'
+         }
+         description.textContent = `Choose which decks you want to ${actionLabels[actionType]}:`
+         description.style.cssText = 'margin: 0 0 1rem 0; color: rgba(255, 255, 255, 0.8);'
+         modal.appendChild(description)
+
+         // Selection controls (moved above the list)
+         const selectionControls = document.createElement('div')
+         selectionControls.style.cssText = 'margin-bottom: 1rem; display: flex; gap: 0.5rem;'
+
+         const selectAllBtn = document.createElement('button')
+         selectAllBtn.textContent = 'Select All'
+         selectAllBtn.style.cssText = 'padding: 0.25rem 0.5rem; font-size: 0.8rem; background: rgba(255, 255, 255, 0.1); color: #ddd; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; cursor: pointer;'
+         selectAllBtn.addEventListener('click', () => {
+            const checkboxes = deckList.querySelectorAll('input[type="checkbox"]')
+            selectedDeckIds.clear() // Clear first to avoid duplicates
+            checkboxes.forEach(cb => {
+               cb.checked = true
+               const deckId = parseInt(cb.id.replace('deck-', ''))
+               selectedDeckIds.add(deckId)
+            })
+            updateButtons()
+         })
+
+         const selectNoneBtn = document.createElement('button')
+         selectNoneBtn.textContent = 'Select None'
+         selectNoneBtn.style.cssText = 'padding: 0.25rem 0.5rem; font-size: 0.8rem; background: rgba(255, 255, 255, 0.1); color: #ddd; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; cursor: pointer;'
+         selectNoneBtn.addEventListener('click', () => {
+            const checkboxes = deckList.querySelectorAll('input[type="checkbox"]')
+            checkboxes.forEach(cb => {
+               cb.checked = false
+            })
+            selectedDeckIds.clear()
+            updateButtons()
+         })
+
+         selectionControls.appendChild(selectAllBtn)
+         selectionControls.appendChild(selectNoneBtn)
+         modal.appendChild(selectionControls)
+
+         // Deck selection list
+         const deckList = document.createElement('div')
+         deckList.className = 'deck-selection-list'
+         deckList.style.cssText = 'margin-bottom: 2rem; max-height: 300px; overflow-y: auto;'
+
+         const selectedDeckIds = new Set()
+
+         // Add deck checkboxes
+         stateMgr.decks.forEach(deck => {
+            const deckItem = document.createElement('div')
+            deckItem.style.cssText = 'margin-bottom: 0.5rem; display: flex; align-items: center;'
+
+            const checkbox = document.createElement('input')
+            checkbox.type = 'checkbox'
+            checkbox.id = `deck-${deck.deckId}`
+            checkbox.style.cssText = 'margin-right: 0.75rem;'
+            checkbox.addEventListener('change', (e) => {
+               const deckId = parseInt(e.target.id.replace('deck-', ''))
+               if (e.target.checked) {
+                  selectedDeckIds.add(deckId)
+               } else {
+                  selectedDeckIds.delete(deckId)
+               }
+               updateButtons()
+            })
+
+            const label = document.createElement('label')
+            label.htmlFor = `deck-${deck.deckId}`
+            label.textContent = deck.title
+            label.style.cssText = 'cursor: pointer; flex: 1;'
+
+            deckItem.appendChild(checkbox)
+            deckItem.appendChild(label)
+            deckList.appendChild(deckItem)
+         })
+
+         modal.appendChild(deckList)
+
+         // Action buttons
+         const buttonContainer = document.createElement('div')
+         buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: flex-end;'
+
+         const confirmBtn = document.createElement('button')
+         confirmBtn.textContent = 'Continue'
+         confirmBtn.style.cssText = 'padding: 0.5rem 1rem; background: #d32f2f; color: white; border: none; border-radius: 4px; cursor: pointer; opacity: 0.5;'
+         confirmBtn.disabled = true
+         confirmBtn.addEventListener('click', () => {
+            document.body.removeChild(modalBg)
+            resolve(Array.from(selectedDeckIds))
+         })
+
+         const cancelBtn = document.createElement('button')
+         cancelBtn.textContent = 'Cancel'
+         cancelBtn.style.cssText = 'padding: 0.5rem 1rem; background: rgba(255, 255, 255, 0.1); color: #ddd; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; cursor: pointer;'
+         cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(modalBg)
+            resolve(null)
+         })
+
+         function updateButtons() {
+            confirmBtn.disabled = selectedDeckIds.size === 0
+            confirmBtn.style.opacity = selectedDeckIds.size === 0 ? '0.5' : '1'
+            confirmBtn.style.cursor = selectedDeckIds.size === 0 ? 'not-allowed' : 'pointer'
+         }
+
+         buttonContainer.appendChild(cancelBtn)
+         buttonContainer.appendChild(confirmBtn)
+         modal.appendChild(buttonContainer)
+
+         // Close modal on background click
+         modalBg.addEventListener('click', (e) => {
+            if (e.target === modalBg) {
+               document.body.removeChild(modalBg)
+               resolve(null)
+            }
+         })
+
+         modalBg.appendChild(modal)
+         document.body.appendChild(modalBg)
+      })
+   },
+
+   async clearQuizHistoryForDecks(deckIds) {
+      const accountId = stateMgr.account.id
+      
+      // Get all cards for the selected decks
+      const allCards = []
+      for (let deckId of deckIds) {
+         const cards = await dbCtx.card.byDeckId(deckId)
+         allCards.push(...cards)
+      }
+      const cardIds = new Set(allCards.map(card => card.id))
+      
+      // Get all quizzes for this account
+      const allQuizzes = await dbCtx.quiz.allForAccount(accountId)
+      
+      // Filter quizzes that involve the selected deck cards
+      const quizzesToDelete = allQuizzes.filter(quiz => {
+         return quiz.allCardIds && quiz.allCardIds.some(cardId => cardIds.has(cardId))
+      })
+      
+      // Delete each quiz and its question answers
+      for (let quiz of quizzesToDelete) {
+         // Delete quiz
+         await dbCtx.quiz.delete(quiz.id)
+         
+         // Delete question answers for this quiz
+         const allAnswers = await dbCtx.questionAnswer.allForAccount(accountId)
+         const quizAnswers = allAnswers.filter(answer => answer.quizId === quiz.id)
+         for (let answer of quizAnswers) {
+            await dbCtx.questionAnswer.delete(answer.id)
+         }
+      }
+      
+      // Also delete any standalone question answers for these cards (not tied to specific quizzes)
+      const remainingAnswers = await dbCtx.questionAnswer.allForAccount(accountId)
+      const cardAnswers = remainingAnswers.filter(answer => 
+         cardIds.has(answer.cardId) && 
+         !quizzesToDelete.some(quiz => quiz.id === answer.quizId)
+      )
+      for (let answer of cardAnswers) {
+         await dbCtx.questionAnswer.delete(answer.id)
+      }
+      
+      // Reload stats data if on stats page
+      if (stateMgr.account?.state?.currentPage === pages.STATS) {
+         await stateMgr.loadStatsPage()
+      }
+   },
+
+   async resetMasteryDataForDecks(deckIds) {
+      const accountId = stateMgr.account.id
+      
+      // Get AccountDeck objects for selected decks
+      const accountDecks = await dbCtx.accountDeck.all(accountId)
+      const selectedAccountDecks = accountDecks.filter(ad => deckIds.includes(ad.deckId))
+      
+      // Clear mastery data for selected decks only
+      for (let accountDeck of selectedAccountDecks) {
+         const masteredCardIds = accountDeck.masteredCardIds || []
+         
+         // Delete QuestionAnswers for all mastered cards
+         for (let cardId of masteredCardIds) {
+            await dbCtx.questionAnswer.deleteByCardId(accountId, cardId)
+         }
+         
+         // Clear mastered cards list and update in database
+         accountDeck.masteredCardIds = []
+         await dbCtx.accountDeck.update(accountDeck)
+         
+         // Update state manager cache if it exists
+         if (stateMgr.decks) {
+            const cacheIndex = stateMgr.decks.findIndex(d => d.deckId === accountDeck.deckId)
+            if (cacheIndex !== -1) {
+               stateMgr.decks[cacheIndex].masteredCardIds = []
+            }
+         }
+      }
+      
+      // Reload stats data if on stats page
+      if (stateMgr.account?.state?.currentPage === pages.STATS) {
+         await stateMgr.loadStatsPage()
+      }
+   },
+
+   async resetAllDataForDecks(deckIds) {
+      // Clear both quiz history and mastery data for selected decks
+      await this.clearQuizHistoryForDecks(deckIds)
+      await this.resetMasteryDataForDecks(deckIds)
    },
 
    onSettingChange(settingKey, value) {
