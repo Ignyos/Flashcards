@@ -4,21 +4,131 @@ body {
     grid-template-rows: 48px 1fr;
     grid-template-columns: auto;
     grid-template-areas: "site-header" "page";
-    height: 100%;
+    height: 100vh;
     color: #ddd;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    margin: 0;
+    padding: 0;
 }
 
 #page {
    background-color: rgb(30,35,40);
    color: rgb(206, 206, 206);
-   padding: 24px;
    font-size: xx-large;
    text-align: center;
+   position: relative;
+   overflow-y: auto;
+   height: 100%;
+}
+
+.main-content {
+   padding: 24px;
+   padding-bottom: 200px;
+   min-height: calc(300vh - 48px);
+}
+
+.splash-section {
+   min-height: calc(100vh - 96px);
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+}
+
+.sticky-header {
+   position: fixed;
+   top: 48px;
+   left: 0;
+   right: 0;
+   background-color: rgba(30,35,40, 0.95);
+   -webkit-backdrop-filter: blur(10px);
+   backdrop-filter: blur(10px);
+   border-bottom: 1px solid rgb(110, 161, 213);
+   padding: 12px 24px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   z-index: 999;
+   transform: translateY(-100%);
+   transition: transform 0.3s ease-in-out;
+   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+   opacity: 0;
+   visibility: hidden;
+}
+
+.sticky-header.visible {
+   transform: translateY(0);
+   opacity: 1;
+   visibility: visible;
+}
+
+.sticky-title {
+   font-size: 1.2rem;
+   font-weight: bold;
+   color: rgb(206, 206, 206);
+}
+
+.sticky-get-started {
+   background-color: transparent;
+   color: #758ca3;
+   border: 0.1rem solid rgb(110, 161, 213);
+   border-radius: 0.2em;
+   padding: 8px 16px;
+   cursor: pointer;
+   font-size: 0.9rem;
+   transition: all 0.2s ease;
+}
+
+.sticky-get-started:hover {
+   background-color: rgb(110, 161, 213);
+   color: white;
+}
+
+.features-section {
+   max-width: 1000px;
+   margin: 0 auto;
+   padding: 40px 24px;
+   text-align: left;
+}
+
+.features-title {
+   text-align: center;
+   font-size: 2.5rem;
+   margin-bottom: 40px;
+   color: rgb(206, 206, 206);
+}
+
+.feature-category {
+   margin-bottom: 40px;
+   background-color: rgba(110, 161, 213, 0.1);
+   padding: 24px;
+   border-radius: 8px;
+   border-left: 4px solid rgb(110, 161, 213);
+}
+
+.category-title {
+   font-size: 1.5rem;
+   margin-bottom: 16px;
+   color: rgb(110, 161, 213);
+}
+
+.features-list {
+   list-style: none;
+   padding: 0;
+   margin: 0;
+}
+
+.features-list li {
+   margin-bottom: 12px;
+   font-size: 0.5em;
+   line-height: 1.6;
+}
+
+.features-list li strong {
+   color: rgb(206, 206, 206);
+}
+
+.features-list li span {
+   color: rgb(180, 180, 180);
 }
 
 .get-started {
