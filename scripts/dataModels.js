@@ -89,6 +89,15 @@ class AccountDeck {
        * Used for performance optimization to avoid re-evaluating mastered cards during quiz generation.
        */
       this.masteredCardIds = Object.hasOwn(data, 'masteredCardIds') ? data.masteredCardIds : []
+      
+      /**
+       * @type {Object} pageStates Per-page settings for this deck, including expansion state
+       * Structure: { [pageName]: { expanded: boolean, ... } }
+       */
+      this.pageStates = Object.hasOwn(data, 'pageStates') ? data.pageStates : {
+         customQuiz: { expanded: false },
+         stats: { expanded: false }
+      }
    }
 }
 
@@ -160,6 +169,10 @@ class DeckListItem {
       this.isSelected = accountDeck.isSelected
       this.selectedCardId = accountDeck.selectedCardId
       this.masteredCardIds = accountDeck.masteredCardIds || []
+      this.pageStates = accountDeck.pageStates || {
+         customQuiz: { expanded: false },
+         stats: { expanded: false }
+      }
       
       this.title = deck.title
    }

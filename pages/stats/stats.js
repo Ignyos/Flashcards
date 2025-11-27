@@ -71,6 +71,21 @@ page = {
          for (const deckItem of deckListItems) {
             const deckElement = this.createDeckElement(deckItem)
             statsContainer.appendChild(deckElement)
+            
+            // If the deck is expanded by default, load its stats
+            const isExpanded = stateMgr.getDeckExpansionState(deckItem.deckId, 'stats')
+            if (isExpanded) {
+               const statsContent = deckElement.querySelector('.deck-stats-content')
+               if (statsContent && statsContent.children.length === 0) {
+                  statsContent.innerHTML = '<div class="loading">Loading deck statistics...</div>'
+                  try {
+                     await this.loadDeckStats(deckItem, statsContent)
+                  } catch (error) {
+                     console.error('Error loading deck stats:', error)
+                     statsContent.innerHTML = '<div class="error">Error loading statistics</div>'
+                  }
+               }
+            }
          }
          
       } catch (error) {
@@ -84,6 +99,9 @@ page = {
       item.className = 'item deck-item'
       item.dataset.deckId = deckListItem.deckId
       
+      // Check if this deck should be expanded based on stored state
+      const isExpanded = stateMgr.getDeckExpansionState(deckListItem.deckId, 'stats')
+      
       // Create header container for toggle and title
       const header = document.createElement('div')
       header.className = 'deck-header'
@@ -91,7 +109,7 @@ page = {
       // Toggle button
       const toggle = document.createElement('div')
       toggle.className = 'accordion-toggle'
-      toggle.innerHTML = '▶' // Right arrow for collapsed
+      toggle.innerHTML = isExpanded ? '▼' : '▶' // Set based on stored state
       
       // Add click handler directly to toggle button
       toggle.addEventListener('click', async (e) => {
@@ -109,9 +127,15 @@ page = {
       
       item.appendChild(header)
       
-      // Stats container (initially hidden)
+      // Stats container (initially hidden unless expanded state says otherwise)
       const statsContent = document.createElement('div')
-      statsContent.className = 'deck-stats-content hidden'
+      statsContent.className = isExpanded ? 'deck-stats-content expanded' : 'deck-stats-content hidden'
+      
+      // If expanded, add the selected class for styling
+      if (isExpanded) {
+         item.classList.add('item-selected')
+      }
+      
       item.appendChild(statsContent)
       
       return item
@@ -128,6 +152,7 @@ page = {
          toggle.innerHTML = '▶' // Right arrow for collapsed
          statsContent.classList.remove('expanded')
          statsContent.classList.add('hidden')
+         await stateMgr.setDeckExpansionState(deckListItem.deckId, 'stats', false)
       } else {
          // Expand - load stats if not already loaded
          deckElement.classList.add('item-selected')
@@ -146,6 +171,7 @@ page = {
          
          statsContent.classList.remove('hidden')
          statsContent.classList.add('expanded')
+         await stateMgr.setDeckExpansionState(deckListItem.deckId, 'stats', true)
       }
    },
    

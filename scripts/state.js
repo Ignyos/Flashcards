@@ -385,11 +385,52 @@ class StateManager {
    }
 
    async loadCustomQuizPage() {
-      // Custom quiz page handles its own data loading
+      // Ensure decks are loaded for custom quiz page
+      if (!this.metaData?.selectedAccountId) { 
+         this.clearPageData()
+         return
+      }
+      await this.loadDecks()
    }
 
    get statsView() {
       return this.account?.state.statsView ?? statsViews.QUESTION
+   }
+
+   /**
+    * Get the expansion state for a deck on a specific page
+    * @param {string} deckId - The deck ID
+    * @param {string} pageName - The page name ('customQuiz' or 'stats')
+    * @returns {boolean} - Whether the deck is expanded
+    */
+   getDeckExpansionState(deckId, pageName) {
+      const accountDeck = this.decks.find(d => d.deckId === deckId)
+      return accountDeck?.pageStates?.[pageName]?.expanded ?? false
+   }
+
+   /**
+    * Set the expansion state for a deck on a specific page
+    * @param {string} deckId - The deck ID
+    * @param {string} pageName - The page name ('customQuiz' or 'stats')
+    * @param {boolean} expanded - Whether the deck should be expanded
+    */
+   async setDeckExpansionState(deckId, pageName, expanded) {
+      const accountDeck = this.decks.find(d => d.deckId === deckId)
+      if (accountDeck) {
+         // Ensure pageStates structure exists
+         if (!accountDeck.pageStates) {
+            accountDeck.pageStates = {
+               customQuiz: { expanded: false },
+               stats: { expanded: false }
+            }
+         }
+         if (!accountDeck.pageStates[pageName]) {
+            accountDeck.pageStates[pageName] = { expanded: false }
+         }
+         
+         accountDeck.pageStates[pageName].expanded = expanded
+         await dbCtx.accountDeck.update(accountDeck)
+      }
    }
 
    //#endregion

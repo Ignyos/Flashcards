@@ -59,8 +59,13 @@ page = {
 
    async loadData() {
       try {
-         // Load all account decks (not just selected ones)
-         this.allDecks = await dbCtx.accountDeck.list(stateMgr.account.id)
+         // Ensure stateMgr has loaded decks first
+         if (!stateMgr.decks || stateMgr.decks.length === 0) {
+            await stateMgr.loadDecks()
+         }
+         
+         // Use stateMgr.decks which contains the expansion state
+         this.allDecks = stateMgr.decks
          
          // Sort decks alphabetically by title
          this.allDecks.sort((a, b) => a.title.localeCompare(b.title))
@@ -152,6 +157,9 @@ page = {
       section.className = 'deck-item'
       section.dataset.deckId = deck.deckId
       
+      // Check if this deck should be expanded based on stored state
+      const isExpanded = stateMgr.getDeckExpansionState(deck.deckId, 'customQuiz')
+      
       // Header (deck title and toggle)
       const header = document.createElement('div')
       header.className = 'deck-header'
@@ -160,7 +168,7 @@ page = {
       // Toggle arrow (left side)
       const toggle = document.createElement('div')
       toggle.className = 'accordion-toggle'
-      toggle.textContent = '▶'
+      toggle.textContent = isExpanded ? '▼' : '▶'
       
       const title = document.createElement('div')
       title.className = 'deck-title'
@@ -169,9 +177,9 @@ page = {
       header.appendChild(toggle)
       header.appendChild(title)
       
-      // Cards content (hidden by default)
+      // Cards content (hidden by default, expanded if stored state says so)
       const cardsList = document.createElement('div')
-      cardsList.className = 'card-content hidden'
+      cardsList.className = isExpanded ? 'card-content expanded' : 'card-content hidden'
       
       // Card stats container (matches stats page structure)
       const cardStats = document.createElement('div')
@@ -272,9 +280,10 @@ page = {
       return item
    },
 
-   toggleDeck(section) {
+   async toggleDeck(section) {
       const cardsList = section.querySelector('.card-content')
       const toggle = section.querySelector('.accordion-toggle')
+      const deckId = section.dataset.deckId
       
       const isExpanded = cardsList.classList.contains('expanded')
       
@@ -283,11 +292,13 @@ page = {
          cardsList.classList.remove('expanded')
          cardsList.classList.add('hidden')
          toggle.textContent = '▶'
+         await stateMgr.setDeckExpansionState(deckId, 'customQuiz', false)
       } else {
          // Expand
          cardsList.classList.remove('hidden')
          cardsList.classList.add('expanded')
          toggle.textContent = '▼'
+         await stateMgr.setDeckExpansionState(deckId, 'customQuiz', true)
       }
    },
 

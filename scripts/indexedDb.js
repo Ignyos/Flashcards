@@ -274,7 +274,8 @@ const dbCtx = {
 
             return await new Promise((resolve, reject) => {
                request.onsuccess = function(event) {
-                  resolve(event.target.result);
+                  // Map the results to AccountDeck objects to ensure proper deserialization
+                  resolve(event.target.result.map(data => new AccountDeck(data)));
                };
 
                request.onerror = function(event) {
