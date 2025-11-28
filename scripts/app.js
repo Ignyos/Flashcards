@@ -115,13 +115,13 @@ class App {
    get pageVersion()
    {
       const result = {}
-      result[pages.HOME] = 0;
+      result[pages.CUSTOM_QUIZ] = 0;
       result[pages.FLASH_CARDS] = 0;
+      result[pages.HOME] = 0;
       result[pages.QUIZ] = 0;
       result[pages.SETTINGS] = 0;
       result[pages.STATS] = 0;
       result[pages.STUDENTS] = 0;
-      result[pages.CUSTOM_QUIZ] = 0;
       return result
    }
 

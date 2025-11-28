@@ -204,22 +204,6 @@ class CardListItem {
    }
 }
 
-class CustomQuiz {
-   constructor(data = {}) {
-      this.id = Object.hasOwn(data, 'id') ? data.id : new Date().toISOString()
-      this.accountId = Object.hasOwn(data, 'accountId') ? data.accountId : ''
-      this.name = Object.hasOwn(data, 'name') ? data.name : this.getDefaultName()
-      this.cardIds = Object.hasOwn(data, 'cardIds') ? data.cardIds : []
-      this.createdDate = Object.hasOwn(data, 'createdDate') ? data.createdDate : new Date().toISOString()
-   }
-   
-   getDefaultName() {
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const day = String(now.getDate()).padStart(2, '0')
-      return `${year} ${month} ${day}`
-   }
-}
+
 
 //#endregion DTOs

@@ -96,6 +96,7 @@ class StateManager {
             // Students page handles its own loading
             break
          default:
+            await this.loadFlashcardsPage()
             break
       }      
    }
