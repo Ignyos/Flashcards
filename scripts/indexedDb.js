@@ -646,7 +646,29 @@ const dbCtx = {
             const request = store.add(answer);
 
             return new Promise((resolve, reject) => {
-               request.onsuccess = function(event) {
+               request.onsuccess = async function(event) {
+                  // Prune old QuestionAnswers for this account/card
+                  const masteryThreshold = stateMgr.account.settings.masteryStreakCount;
+                  const masteryWindowDays = stateMgr.account.settings.masteryWindowDays;
+                  const windowStart = new Date();
+                  windowStart.setDate(windowStart.getDate() - masteryWindowDays);
+                  const allAnswers = await dbCtx.questionAnswer.byAccountId(answer.accountId, "");
+                  const cardAnswers = allAnswers.filter(a => a.cardId === answer.cardId)
+                     .sort((a, b) => new Date(b.id) - new Date(a.id));
+                  // Delete answers older than the mastery window
+                  for (const oldAnswer of cardAnswers) {
+                     if (new Date(oldAnswer.id) < windowStart) {
+                        await dbCtx.questionAnswer.delete(oldAnswer.id);
+                     }
+                  }
+                  // After pruning, if more than masteryThreshold remain, delete oldest beyond threshold
+                  const recentAnswers = cardAnswers.filter(a => new Date(a.id) >= windowStart);
+                  if (recentAnswers.length > masteryThreshold) {
+                     const toDelete = recentAnswers.slice(masteryThreshold);
+                     for (const oldAnswer of toDelete) {
+                        await dbCtx.questionAnswer.delete(oldAnswer.id);
+                     }
+                  }
                   resolve();
                };
 
@@ -899,7 +921,17 @@ const dbCtx = {
             const request = store.add(quiz);
 
             return new Promise((resolve, reject) => {
-               request.onsuccess = function(event) {
+               request.onsuccess = async function(event) {
+                  // Prune old Quizzes for this account
+                  const statsHistoryDays = stateMgr.account.settings.statsHistoryAgeInDays;
+                  const cutoffDate = new Date();
+                  cutoffDate.setDate(cutoffDate.getDate() - statsHistoryDays);
+                  const allQuizzes = await dbCtx.quiz.byAccountId(quiz.accountId);
+                  for (const oldQuiz of allQuizzes) {
+                     if (oldQuiz.completeDate && new Date(oldQuiz.completeDate) < cutoffDate) {
+                        await dbCtx.quiz.delete(oldQuiz.id);
+                     }
+                  }
                   resolve();
                };
 

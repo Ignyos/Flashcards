@@ -167,7 +167,7 @@ page = {
             // Mastery Streak Count
             content.appendChild(this.createSettingItem(
                'Mastery Threshold',
-               'Number of consecutive correct answers needed before a question is considered mastered and asked less frequently.',
+               'Number of consecutive correct answers needed before a question is considered mastered. Mastered questions are not included in regular quizzes and will only appear if you build a custom quiz with them. This setting also determines how your success rate for each card is calculated and displayed: only the most recent N answers (where N is the Mastery Threshold) are used to compute your performance statistics.',
                'masteryStreakCount',
                'number',
                { min: 1, max: 10 },
@@ -196,7 +196,7 @@ page = {
             // Stats History Age
             content.appendChild(this.createSettingItem(
                'Statistics History',
-               'Number of days of quiz history to include in statistics and performance calculations. Older data will be ignored.',
+               'Number of days of quiz history to include in statistics and performance calculations. Older data will be deleted.',
                'statsHistoryAgeInDays',
                'number',
                { min: 7, max: 365 },
