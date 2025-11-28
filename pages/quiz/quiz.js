@@ -74,14 +74,6 @@ page = {
       // Reset the UI for the new question
       a.innerText = ''
       controls.classList.add('invisible')
-      
-      // Update the question counter
-      let counter = document.querySelector('.navigation .pill')
-      if (counter && counter.innerText.startsWith('Q:')) {
-         let n = stateMgr.quiz.answeredCardIds.length + 1
-         let total = stateMgr.quiz.allCardIds.length
-         counter.innerText = `Q: ${n} of ${total}`
-      }
    },
 
    get questionEle() {
@@ -145,6 +137,15 @@ page = {
       })
       await dbCtx.questionAnswer.add(questionAnswer)
       await stateMgr.updateAnsweredCardIds(stateMgr.card.id)
+      
+      // Update the question counter after recording the answer
+      let counter = document.getElementById('question-counter')
+      if (counter) {
+         let n = stateMgr.quiz.answeredCardIds.length + 1
+         let total = stateMgr.quiz.allCardIds.length
+         counter.innerText = `Q: ${n} of ${total}`
+      }
+      
       if (stateMgr.quiz.allCardIds.length === stateMgr.quiz.answeredCardIds.length) {
          // Mark quiz as complete
          stateMgr.quiz.completeDate = new Date().toISOString()
@@ -231,6 +232,7 @@ navigation = {
       let total = stateMgr.quiz.allCardIds.length
       ele.innerText= `Q: ${n} of ${total}`
       ele.id = 'question-counter'
+      ele.classList.add('pill')  // Add pill class so it can be found by the update code
       return ele
    },
 
