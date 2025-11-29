@@ -251,16 +251,36 @@ page = {
          'Import / Export',
          'Export your learning data for backup or transfer to another device. Import options will be available in future updates.',
          (content) => {
-            // Data Preview
-            const preview = document.createElement('div');
-            preview.id = 'export-preview';
-            preview.style = 'margin-bottom: 1em; padding: 0.5em 1em; background: #222; color: #fff; border-radius: 6px; font-size: 0.95em;';
-            content.appendChild(preview);
+            // --- Refactored Export Layout ---
+            // Create flex container for export section
+            const exportFlex = document.createElement('div');
+            exportFlex.className = 'settings-section-flex';
+            exportFlex.style.display = 'flex';
+            exportFlex.style.alignItems = 'flex-start';
+            exportFlex.style.justifyContent = 'space-between';
+            exportFlex.style.gap = '2rem';
 
-            // Selective Export Controls
-            const exportOptions = document.createElement('div');
-            exportOptions.className = 'export-options';
-            exportOptions.style.marginTop = '1rem';
+            // Left side: label, description, controls
+            const left = document.createElement('div');
+            left.className = 'settings-section-left';
+            left.style.flex = '1 1 0';
+
+            // Label
+            const label = document.createElement('div');
+            label.className = 'setting-label';
+            label.innerText = 'Export Flashcards';
+            left.appendChild(label);
+
+            // Description
+            const desc = document.createElement('div');
+            desc.className = 'setting-description';
+            desc.innerText = 'Export your flashcards to a JSON file. You can choose to export all decks or only selected ones.';
+            left.appendChild(desc);
+
+            // Controls (checkboxes + preview)
+            const controls = document.createElement('div');
+            controls.className = 'export-controls';
+            controls.style.marginTop = '1rem';
 
             const options = [
                { id: 'export-decks', label: 'Decks', checked: true },
@@ -268,30 +288,6 @@ page = {
                { id: 'export-mastery-data', label: 'Mastery Data', checked: true },
                { id: 'export-settings', label: 'Settings', checked: true }
             ];
-
-            // Export Data Button
-            const exportBtn = document.createElement('button');
-            exportBtn.className = 'action-button secondary';
-            exportBtn.innerText = 'Export Data';
-            exportBtn.id = 'export-data';
-            exportBtn.addEventListener('click', (e) => {
-               if (exportBtn.disabled) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return;
-               }
-               this.handleDataAction('export-data');
-            });
-            content.appendChild(exportBtn);
-
-            // Checkbox rendering and button enable/disable logic
-            function updateExportBtnState() {
-               const anyChecked = options.some(opt => document.getElementById(opt.id)?.checked);
-               exportBtn.disabled = !anyChecked;
-               exportBtn.style.opacity = anyChecked ? '1' : '0.5';
-               exportBtn.style.cursor = anyChecked ? 'pointer' : 'not-allowed';
-               exportBtn.style.pointerEvents = anyChecked ? 'auto' : 'none';
-            }
 
             options.forEach(opt => {
                const wrapper = document.createElement('label');
@@ -307,9 +303,52 @@ page = {
                });
                wrapper.appendChild(cb);
                wrapper.appendChild(document.createTextNode(opt.label));
-               exportOptions.appendChild(wrapper);
+               controls.appendChild(wrapper);
             });
-            content.appendChild(exportOptions);
+
+            // Preview
+            const preview = document.createElement('div');
+            preview.id = 'export-preview';
+            preview.style = 'margin-top: 1em; padding: 0.5em 1em; background: #222; color: #fff; border-radius: 6px; font-size: 0.95em;';
+            controls.appendChild(preview);
+
+            left.appendChild(controls);
+            exportFlex.appendChild(left);
+
+            // Right side: export button
+            const right = document.createElement('div');
+            right.className = 'settings-section-right';
+            right.style.display = 'flex';
+            right.style.flexDirection = 'column';
+            right.style.justifyContent = 'flex-start';
+            right.style.alignItems = 'flex-end';
+            right.style.flex = '0 0 auto';
+
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'action-button secondary';
+            exportBtn.innerText = 'Export Data';
+            exportBtn.id = 'export-data';
+            exportBtn.addEventListener('click', (e) => {
+               if (exportBtn.disabled) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+               }
+               this.handleDataAction('export-data');
+            });
+            right.appendChild(exportBtn);
+            exportFlex.appendChild(right);
+
+            content.appendChild(exportFlex);
+
+            // Checkbox rendering and button enable/disable logic
+            function updateExportBtnState() {
+               const anyChecked = options.some(opt => document.getElementById(opt.id)?.checked);
+               exportBtn.disabled = !anyChecked;
+               exportBtn.style.opacity = anyChecked ? '1' : '0.5';
+               exportBtn.style.cursor = anyChecked ? 'pointer' : 'not-allowed';
+               exportBtn.style.pointerEvents = anyChecked ? 'auto' : 'none';
+            }
 
             // Initial button state
             setTimeout(updateExportBtnState, 0);
