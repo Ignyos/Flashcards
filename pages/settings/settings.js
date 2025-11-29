@@ -251,10 +251,16 @@ page = {
          'Import / Export',
          'Export your learning data for backup or transfer to another device. Import options will be available in future updates.',
          (content) => {
+            // Data Preview
+            const preview = document.createElement('div');
+            preview.id = 'export-preview';
+            preview.style = 'margin-bottom: 1em; padding: 0.5em 1em; background: #222; color: #fff; border-radius: 6px; font-size: 0.95em;';
+            content.appendChild(preview);
+
             // Selective Export Controls
             const exportOptions = document.createElement('div');
             exportOptions.className = 'export-options';
-            exportOptions.style.marginBottom = '1rem';
+            exportOptions.style.marginTop = '1rem';
 
             const options = [
                { id: 'export-decks', label: 'Decks', checked: true },
@@ -262,6 +268,31 @@ page = {
                { id: 'export-mastery-data', label: 'Mastery Data', checked: true },
                { id: 'export-settings', label: 'Settings', checked: true }
             ];
+
+            // Export Data Button
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'action-button secondary';
+            exportBtn.innerText = 'Export Data';
+            exportBtn.id = 'export-data';
+            exportBtn.addEventListener('click', (e) => {
+               if (exportBtn.disabled) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+               }
+               this.handleDataAction('export-data');
+            });
+            content.appendChild(exportBtn);
+
+            // Checkbox rendering and button enable/disable logic
+            function updateExportBtnState() {
+               const anyChecked = options.some(opt => document.getElementById(opt.id)?.checked);
+               exportBtn.disabled = !anyChecked;
+               exportBtn.style.opacity = anyChecked ? '1' : '0.5';
+               exportBtn.style.cursor = anyChecked ? 'pointer' : 'not-allowed';
+               exportBtn.style.pointerEvents = anyChecked ? 'auto' : 'none';
+            }
+
             options.forEach(opt => {
                const wrapper = document.createElement('label');
                wrapper.style.marginRight = '1.5em';
@@ -270,25 +301,92 @@ page = {
                cb.id = opt.id;
                cb.checked = opt.checked;
                cb.style.marginRight = '0.5em';
+               cb.addEventListener('change', () => {
+                  updatePreview();
+                  updateExportBtnState();
+               });
                wrapper.appendChild(cb);
                wrapper.appendChild(document.createTextNode(opt.label));
                exportOptions.appendChild(wrapper);
             });
             content.appendChild(exportOptions);
 
-            // Export status message
-            const exportStatus = document.createElement('div');
-            exportStatus.id = 'export-status';
-            exportStatus.style = 'margin-top: 1em; min-height: 2em; color: #388e3c; font-weight: bold;';
-            content.appendChild(exportStatus);
+            // Initial button state
+            setTimeout(updateExportBtnState, 0);
 
-            // Export Data Button
-            const exportBtn = document.createElement('button');
-            exportBtn.className = 'action-button secondary';
-            exportBtn.innerText = 'Export Data';
-            exportBtn.id = 'export-data';
-            exportBtn.addEventListener('click', () => this.handleDataAction('export-data'));
-            content.appendChild(exportBtn);
+            // Preview update logic
+            async function updatePreview() {
+               let html = '<strong>Export Preview:</strong><br>';
+               const decksChecked = document.getElementById('export-decks')?.checked;
+               const quizChecked = document.getElementById('export-quiz-history')?.checked;
+               const masteryChecked = document.getElementById('export-mastery-data')?.checked;
+               const settingsChecked = document.getElementById('export-settings')?.checked;
+
+               // Decks and cards
+               let deckCount = stateMgr.decks?.length || 0;
+               let cardCount = 0;
+               if (stateMgr.decks && deckCount > 0) {
+                  let cardPromises = stateMgr.decks.map(deck => dbCtx.card.byDeckId(deck.deckId));
+                  let cardsArrays = await Promise.all(cardPromises);
+                  cardCount = cardsArrays.reduce((sum, arr) => sum + (arr?.length || 0), 0);
+               }
+               if (decksChecked) {
+                  html += `Decks: <b>${deckCount}</b>, Cards: <b>${cardCount}</b><br>`;
+               } else {
+                  html += `<span style="text-decoration:line-through;opacity:0.6">Decks: <b>${deckCount}</b>, Cards: <b>${cardCount}</b></span><br>`;
+               }
+
+               // Quizzes and answers (async)
+               let quizCount = 0;
+               let answerCount = 0;
+               if (stateMgr.account?.id) {
+                  try {
+                     const quizzes = await dbCtx.quiz.allForAccount(stateMgr.account.id);
+                     const answers = await dbCtx.questionAnswer.allForAccount(stateMgr.account.id);
+                     quizCount = quizzes.length;
+                     answerCount = answers.length;
+                  } catch (e) {
+                     quizCount = '?';
+                     answerCount = '?';
+                  }
+               }
+               if (quizChecked) {
+                  html += `Quizzes: <b>${quizCount}</b>, Answers: <b>${answerCount}</b><br>`;
+               } else {
+                  html += `<span style="text-decoration:line-through;opacity:0.6">Quizzes: <b>${quizCount}</b>, Answers: <b>${answerCount}</b></span><br>`;
+               }
+
+               // Mastered cards
+               let mastered = 0;
+               if (stateMgr.decks) {
+                  mastered = stateMgr.decks.reduce((sum, deck) => sum + (deck.masteredCardIds?.length || 0), 0);
+               }
+               if (masteryChecked) {
+                  html += `Mastered Cards: <b>${mastered}</b><br>`;
+               } else {
+                  html += `<span style="text-decoration:line-through;opacity:0.6">Mastered Cards: <b>${mastered}</b></span><br>`;
+               }
+
+               // Settings
+               if (settingsChecked) {
+                  html += `Settings: <b>Included</b><br>`;
+               } else {
+                  html += `<span style="text-decoration:line-through;opacity:0.6">Settings: <b>Excluded</b></span><br>`;
+               }
+
+               preview.innerHTML = html;
+            }
+
+            // Initial preview (ensure async)
+            setTimeout(updatePreview, 0);
+
+            // Also update preview on page load and when checkboxes change
+            options.forEach(opt => {
+               const cb = document.getElementById(opt.id);
+               if (cb) {
+                  cb.addEventListener('change', () => setTimeout(updatePreview, 0));
+               }
+            });
          }
       )
    },
@@ -559,7 +657,12 @@ page = {
 
          const exportData = {
             exportDate: new Date().toISOString(),
-            accountName: stateMgr.account.name
+            accountName: stateMgr.account.name,
+            decks: [],
+            quizHistory: [],
+            questionAnswers: [],
+            masteryData: [],
+            settings: {}
          };
          if (decksChecked) {
             exportData.decks = stateMgr.decks ? stateMgr.decks.map(deck => ({
