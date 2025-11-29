@@ -279,16 +279,17 @@ page = {
          return b.successRate - a.successRate
       })
       
-      // Check if all cards with attempts are mastered
-      const cardsWithAttempts = cardStats.filter(stat => stat.attemptCount > 0)
-      const allMastered = cardsWithAttempts.length > 0 && cardsWithAttempts.every(stat => stat.isMastered)
-      
+      // Check if all cards in the deck are mastered
+      const allDeckCardIds = deckCards.map(card => card.id)
+      const masteredCardIdsSet = new Set(masteredCardIds)
+      const allDeckCardsMastered = allDeckCardIds.length > 0 && allDeckCardIds.every(cardId => masteredCardIdsSet.has(cardId))
+
       // Build the stats content
       let content = `
          <div class="deck-summary">
             <div class="stat-item">Cards answered in ${quizCount} quizzes over the last ${daysBack} days</div>
-            ${allMastered ? '' : `<div class="stat-item">Deck average: ${averageScore}% correct</div>`}
-            ${allMastered ? '<div class="stat-item mastery-message">🎉 You\'re a master of this topic!</div>' : ''}
+            ${allDeckCardsMastered ? '' : `<div class="stat-item">Deck average: ${averageScore}% correct</div>`}
+            ${allDeckCardsMastered ? '<div class="stat-item mastery-message">🎉 You\'re a master of this topic!</div>' : ''}
          </div>
          <div class="card-stats">
             <div class="card-stats-header">Card Performance:</div>

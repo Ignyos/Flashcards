@@ -456,16 +456,22 @@ page = {
 
    async clearQuizHistory() {
       const accountId = stateMgr.account.id
-      
+      console.log('Clearing quiz history for account:', accountId)
       // Delete all quizzes for this account
       await dbCtx.quiz.deleteAllForAccount(accountId)
-      
+      console.log('All quizzes deleted for account:', accountId)
       // Delete all question answers for this account  
       await dbCtx.questionAnswer.deleteAllForAccount(accountId)
-      
+      console.log('All question answers deleted for account:', accountId)
       // Reload stats data if on stats page
       if (stateMgr.account?.state?.currentPage === pages.STATS) {
          await stateMgr.loadStatsPage()
+         console.log('Stats page reloaded after clearing quiz history.')
+      }
+      // Force UI update
+      if (typeof this.refreshUI === 'function') {
+         this.refreshUI()
+         console.log('Settings UI refreshed after clearing quiz history.')
       }
    },
 
@@ -550,7 +556,9 @@ page = {
    async handleSelectedDecksAction(actionType) {
       // Show deck selection modal
       const selectedDeckIds = await this.showDeckSelectionModal(actionType)
+      console.log('Selected deck IDs:', selectedDeckIds)
       if (!selectedDeckIds || selectedDeckIds.length === 0) {
+         console.log('No decks selected or user cancelled.')
          return // User cancelled or selected nothing
       }
 
@@ -558,6 +566,7 @@ page = {
       const selectedDeckNames = stateMgr.decks
          .filter(deck => selectedDeckIds.includes(deck.deckId))
          .map(deck => deck.title)
+      console.log('Selected deck names:', selectedDeckNames)
 
       // Confirmation based on action type
       let confirmed = false
@@ -568,6 +577,7 @@ page = {
                `This will permanently delete quiz history and statistics for the following decks:\n\n${selectedDeckNames.join('\n')}\n\nYour mastery progress will be preserved.`
             )
             if (confirmed) {
+               console.log('Confirmed clear quiz history for decks:', selectedDeckIds)
                await this.clearQuizHistoryForDecks(selectedDeckIds)
                alert(`Quiz history has been cleared for ${selectedDeckNames.length} deck(s).`)
             }
@@ -659,7 +669,7 @@ page = {
             selectedDeckIds.clear() // Clear first to avoid duplicates
             checkboxes.forEach(cb => {
                cb.checked = true
-               const deckId = parseInt(cb.id.replace('deck-', ''))
+               const deckId = cb.id.replace('deck-', '')
                selectedDeckIds.add(deckId)
             })
             updateButtons()
@@ -698,7 +708,7 @@ page = {
             checkbox.id = `deck-${deck.deckId}`
             checkbox.style.cssText = 'margin-right: 0.75rem;'
             checkbox.addEventListener('change', (e) => {
-               const deckId = parseInt(e.target.id.replace('deck-', ''))
+               const deckId = e.target.id.replace('deck-', '')
                if (e.target.checked) {
                   selectedDeckIds.add(deckId)
                } else {
@@ -765,49 +775,52 @@ page = {
 
    async clearQuizHistoryForDecks(deckIds) {
       const accountId = stateMgr.account.id
-      
+      console.log('Clearing quiz history for decks:', deckIds)
       // Get all cards for the selected decks
       const allCards = []
       for (let deckId of deckIds) {
          const cards = await dbCtx.card.byDeckId(deckId)
          allCards.push(...cards)
       }
-      const cardIds = new Set(allCards.map(card => card.id))
-      
+      const cardIdsToDelete = new Set(allCards.map(card => card.id))
+      console.log('Card IDs for selected decks:', Array.from(cardIdsToDelete))
       // Get all quizzes for this account
       const allQuizzes = await dbCtx.quiz.allForAccount(accountId)
-      
-      // Filter quizzes that involve the selected deck cards
-      const quizzesToDelete = allQuizzes.filter(quiz => {
-         return quiz.allCardIds && quiz.allCardIds.some(cardId => cardIds.has(cardId))
-      })
-      
-      // Delete each quiz and its question answers
-      for (let quiz of quizzesToDelete) {
-         // Delete quiz
-         await dbCtx.quiz.delete(quiz.id)
-         
-         // Delete question answers for this quiz
-         const allAnswers = await dbCtx.questionAnswer.allForAccount(accountId)
-         const quizAnswers = allAnswers.filter(answer => answer.quizId === quiz.id)
-         for (let answer of quizAnswers) {
+      // Get all answers for this account
+      const allAnswers = await dbCtx.questionAnswer.allForAccount(accountId)
+      for (let quiz of allQuizzes) {
+         // Find answers for this quiz and selected deck's cards
+         const quizAnswersToDelete = allAnswers.filter(answer => answer.quizId === quiz.id && cardIdsToDelete.has(answer.cardId))
+         for (let answer of quizAnswersToDelete) {
             await dbCtx.questionAnswer.delete(answer.id)
          }
+         // Remove cardIds and deckIds from quiz
+         quiz.allCardIds = quiz.allCardIds.filter(cardId => !cardIdsToDelete.has(cardId))
+         quiz.allDeckIds = quiz.allDeckIds.filter(deckId => !deckIds.includes(deckId))
+         // Check if any answers remain for this quiz
+         const remainingAnswers = allAnswers.filter(answer => answer.quizId === quiz.id && !cardIdsToDelete.has(answer.cardId))
+         if (quiz.allCardIds.length === 0 || remainingAnswers.length === 0) {
+            // No cards/answers left, delete quiz
+            await dbCtx.quiz.delete(quiz.id)
+         } else {
+            // Update quiz to reflect removed cards/decks
+            await dbCtx.quiz.update(quiz)
+         }
       }
-      
       // Also delete any standalone question answers for these cards (not tied to specific quizzes)
       const remainingAnswers = await dbCtx.questionAnswer.allForAccount(accountId)
       const cardAnswers = remainingAnswers.filter(answer => 
-         cardIds.has(answer.cardId) && 
-         !quizzesToDelete.some(quiz => quiz.id === answer.quizId)
+         cardIdsToDelete.has(answer.cardId) && 
+         !allQuizzes.some(quiz => quiz.id === answer.quizId)
       )
+      console.log('Standalone card answers to delete:', cardAnswers.map(a => a.id))
       for (let answer of cardAnswers) {
          await dbCtx.questionAnswer.delete(answer.id)
       }
-      
       // Reload stats data if on stats page
       if (stateMgr.account?.state?.currentPage === pages.STATS) {
          await stateMgr.loadStatsPage()
+         console.log('Stats page reloaded after clearing selected decks quiz history.')
       }
    },
 
