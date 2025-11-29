@@ -2,8 +2,8 @@
 
 ### Export Features
 - [x] Include app version and schema version in exported data
-- [ ] Allow selective export (decks, quiz history, mastery data)
-- [ ] Show progress indicator or confirmation on export completion
+- [x] Allow selective export (decks, quiz history, mastery data)
+- [x] Show progress indicator or confirmation on export completion
 - [ ] Offer data preview before export (counts of decks, cards, quizzes, etc.)
 
 ### Import Features

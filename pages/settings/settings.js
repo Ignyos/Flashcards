@@ -276,6 +276,12 @@ page = {
             });
             content.appendChild(exportOptions);
 
+            // Export status message
+            const exportStatus = document.createElement('div');
+            exportStatus.id = 'export-status';
+            exportStatus.style = 'margin-top: 1em; min-height: 2em; color: #388e3c; font-weight: bold;';
+            content.appendChild(exportStatus);
+
             // Export Data Button
             const exportBtn = document.createElement('button');
             exportBtn.className = 'action-button secondary';
@@ -543,6 +549,7 @@ page = {
 
    async exportData() {
       try {
+         messageCenter.addInfo('Exporting data...');
          const accountId = stateMgr.account.id;
          // Get selected export options
          const decksChecked = document.getElementById('export-decks')?.checked;
@@ -587,10 +594,10 @@ page = {
          link.click();
          document.body.removeChild(link);
 
-         alert('Selected learning data has been exported successfully.');
+         messageCenter.addInfo('Export complete! Your selected data has been downloaded.');
       } catch (error) {
          console.error('Error exporting data:', error);
-         alert('Failed to export data. Please try again.');
+         messageCenter.addError('Failed to export data. Please try again.');
       }
    },
 
