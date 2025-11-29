@@ -259,9 +259,9 @@
 
 /* Secondary action button (Export Data) */
 .action-button.secondary {
-   background: rgba(106, 90, 205, 0.2);
-   border: 1px solid rgba(106, 90, 205, 0.4);
-   color: rgba(106, 90, 205, 0.9);
+    background: rgb(66 131 255 / 20%);
+    border: 1px solid rgba(70, 163, 255, 0.5);
+    color: rgba(70, 163, 255, 0.9);
 }
 
 .action-button.secondary:hover {

@@ -251,14 +251,38 @@ page = {
          'Import / Export',
          'Export your learning data for backup or transfer to another device. Import options will be available in future updates.',
          (content) => {
-            // Export Data
-            content.appendChild(this.createActionItem(
-               'Export Learning Data',
-               'Download your quiz history and mastery progress as a backup file. This allows you to keep a record before resetting or for transfer to another device.',
-               'export-data',
-               'Export Data',
-               'secondary'
-            ))
+            // Selective Export Controls
+            const exportOptions = document.createElement('div');
+            exportOptions.className = 'export-options';
+            exportOptions.style.marginBottom = '1rem';
+
+            const options = [
+               { id: 'export-decks', label: 'Decks', checked: true },
+               { id: 'export-quiz-history', label: 'Quiz History', checked: true },
+               { id: 'export-mastery-data', label: 'Mastery Data', checked: true },
+               { id: 'export-settings', label: 'Settings', checked: true }
+            ];
+            options.forEach(opt => {
+               const wrapper = document.createElement('label');
+               wrapper.style.marginRight = '1.5em';
+               const cb = document.createElement('input');
+               cb.type = 'checkbox';
+               cb.id = opt.id;
+               cb.checked = opt.checked;
+               cb.style.marginRight = '0.5em';
+               wrapper.appendChild(cb);
+               wrapper.appendChild(document.createTextNode(opt.label));
+               exportOptions.appendChild(wrapper);
+            });
+            content.appendChild(exportOptions);
+
+            // Export Data Button
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'action-button secondary';
+            exportBtn.innerText = 'Export Data';
+            exportBtn.id = 'export-data';
+            exportBtn.addEventListener('click', () => this.handleDataAction('export-data'));
+            content.appendChild(exportBtn);
          }
       )
    },
@@ -519,37 +543,54 @@ page = {
 
    async exportData() {
       try {
-         const accountId = stateMgr.account.id
-         
-         // Gather all data
+         const accountId = stateMgr.account.id;
+         // Get selected export options
+         const decksChecked = document.getElementById('export-decks')?.checked;
+         const quizChecked = document.getElementById('export-quiz-history')?.checked;
+         const masteryChecked = document.getElementById('export-mastery-data')?.checked;
+         const settingsChecked = document.getElementById('export-settings')?.checked;
+
          const exportData = {
             exportDate: new Date().toISOString(),
-            accountName: stateMgr.account.name,
-            quizHistory: await dbCtx.quiz.allForAccount(accountId),
-            questionAnswers: await dbCtx.questionAnswer.allForAccount(accountId),
-            masteryData: stateMgr.decks ? stateMgr.decks.map(deck => ({
+            accountName: stateMgr.account.name
+         };
+         if (decksChecked) {
+            exportData.decks = stateMgr.decks ? stateMgr.decks.map(deck => ({
+               deckId: deck.deckId,
+               title: deck.title,
+               cards: deck.cards
+            })) : [];
+         }
+         if (quizChecked) {
+            exportData.quizHistory = await dbCtx.quiz.allForAccount(accountId);
+            exportData.questionAnswers = await dbCtx.questionAnswer.allForAccount(accountId);
+         }
+         if (masteryChecked) {
+            exportData.masteryData = stateMgr.decks ? stateMgr.decks.map(deck => ({
                deckId: deck.deckId,
                deckTitle: deck.title,
                masteredCardIds: deck.masteredCardIds
-            })) : [],
-            settings: stateMgr.account.settings
+            })) : [];
          }
-         
+         if (settingsChecked) {
+            exportData.settings = stateMgr.account.settings;
+         }
+
          // Create and download file
-         const dataStr = JSON.stringify(exportData, null, 2)
-         const dataBlob = new Blob([dataStr], { type: 'application/json' })
-         
-         const link = document.createElement('a')
-         link.href = URL.createObjectURL(dataBlob)
-         link.download = `flashcards-data-${stateMgr.account.name}-${new Date().toISOString().split('T')[0]}.json`
-         document.body.appendChild(link)
-         link.click()
-         document.body.removeChild(link)
-         
-         alert('Learning data has been exported successfully.')
+         const dataStr = JSON.stringify(exportData, null, 2);
+         const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+         const link = document.createElement('a');
+         link.href = URL.createObjectURL(dataBlob);
+         link.download = `flashcards-data-${stateMgr.account.name}-${new Date().toISOString().split('T')[0]}.json`;
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+
+         alert('Selected learning data has been exported successfully.');
       } catch (error) {
-         console.error('Error exporting data:', error)
-         alert('Failed to export data. Please try again.')
+         console.error('Error exporting data:', error);
+         alert('Failed to export data. Please try again.');
       }
    },
 
