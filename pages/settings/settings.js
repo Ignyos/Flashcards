@@ -249,7 +249,7 @@ page = {
       return this.createCollapsibleSection(
          'import-export',
          'Import / Export',
-         'Export your learning data for backup or transfer to another device. Import options will be available in future updates.',
+         'Import or export your learning data for backup, transfer, or recovery.',
          (content) => {
             // --- Refactored Export Layout ---
             // Create flex container for export section
