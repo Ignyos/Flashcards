@@ -7,12 +7,11 @@
 - [x] Offer data preview before export (counts of decks, cards, quizzes, etc.)
 
 ### Import Features
-- [ ] Validate file format, version, and schema before importing
-- [ ] Warn user if file is incompatible
-- [ ] Offer conflict resolution (merge, overwrite, skip, rename) for overlapping data
-- [ ] Allow partial import (select decks, mastery, etc.)
-- [ ] Show clear error messages and log details if import fails
-- [ ] Keep a log of import/export actions for troubleshooting
+- [ ] Allow user to select and upload a previously exported JSON file
+- [ ] Validate file format and contents (decks, quiz history, mastery data, settings)
+- [ ] Prompt user to merge or overwrite imported data with current account data
+- [ ] Show a success or error message after import
+- [ ] Warn user if file is incompatible or invalid
 - [ ] Security warning for importing data from untrusted sources
 
 ### General UX

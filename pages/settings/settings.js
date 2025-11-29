@@ -341,6 +341,79 @@ page = {
 
             content.appendChild(exportFlex);
 
+            // Divider between Export and Import sections
+            const divider = document.createElement('div');
+            divider.className = 'settings-divider';
+            divider.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+            divider.style.margin = '2rem 0 1.5rem 0';
+            content.appendChild(divider);
+
+            // --- Minimal Import Section UI ---
+            const importFlex = document.createElement('div');
+            importFlex.className = 'settings-section-flex';
+            importFlex.style.display = 'flex';
+            importFlex.style.alignItems = 'flex-start';
+            importFlex.style.justifyContent = 'space-between';
+            importFlex.style.gap = '2rem';
+
+            // Left side: label, description, file input
+            const importLeft = document.createElement('div');
+            importLeft.className = 'settings-section-left';
+            importLeft.style.flex = '1 1 0';
+
+            // Label
+            const importLabel = document.createElement('div');
+            importLabel.className = 'setting-label';
+            importLabel.innerText = 'Import Flashcards';
+            importLeft.appendChild(importLabel);
+
+            // Description
+            const importDesc = document.createElement('div');
+            importDesc.className = 'setting-description';
+            importDesc.innerText = 'Select a previously exported JSON file to restore your flashcards, quizzes, and settings.';
+            importLeft.appendChild(importDesc);
+
+            // File input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json,application/json';
+            fileInput.id = 'import-file';
+            fileInput.style.marginTop = '1rem';
+            importLeft.appendChild(fileInput);
+
+            // Feedback area
+            const importFeedback = document.createElement('div');
+            importFeedback.id = 'import-feedback';
+            importFeedback.style.marginTop = '1rem';
+            importFeedback.style.fontSize = '0.95em';
+            importLeft.appendChild(importFeedback);
+
+            importFlex.appendChild(importLeft);
+
+            // Right side: import button
+            const importRight = document.createElement('div');
+            importRight.className = 'settings-section-right';
+            importRight.style.display = 'flex';
+            importRight.style.flexDirection = 'column';
+            importRight.style.justifyContent = 'flex-start';
+            importRight.style.alignItems = 'flex-end';
+            importRight.style.flex = '0 0 auto';
+
+            const importBtn = document.createElement('button');
+            importBtn.className = 'action-button secondary';
+            importBtn.innerText = 'Import Data';
+            importBtn.id = 'import-data';
+            importBtn.disabled = true;
+            importRight.appendChild(importBtn);
+            importFlex.appendChild(importRight);
+
+            content.appendChild(importFlex);
+
+            // Enable button only when a file is selected
+            fileInput.addEventListener('change', () => {
+               importBtn.disabled = !fileInput.files.length;
+            });
+
             // Checkbox rendering and button enable/disable logic
             function updateExportBtnState() {
                const anyChecked = options.some(opt => document.getElementById(opt.id)?.checked);
