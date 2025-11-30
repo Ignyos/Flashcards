@@ -373,12 +373,12 @@ page = {
             importDesc.innerText = 'Select a previously exported JSON file to restore your flashcards, quizzes, and settings.';
             importLeft.appendChild(importDesc);
 
-            // File input
+            // Hidden file input
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.json,application/json';
             fileInput.id = 'import-file';
-            fileInput.style.marginTop = '1rem';
+            fileInput.style.display = 'none';
             importLeft.appendChild(fileInput);
 
             // Feedback area
@@ -403,15 +403,70 @@ page = {
             importBtn.className = 'action-button secondary';
             importBtn.innerText = 'Import Data';
             importBtn.id = 'import-data';
-            importBtn.disabled = true;
             importRight.appendChild(importBtn);
             importFlex.appendChild(importRight);
 
             content.appendChild(importFlex);
 
-            // Enable button only when a file is selected
+            // Button triggers file selector
+            importBtn.addEventListener('click', () => {
+               fileInput.value = '';
+               importFeedback.textContent = '';
+               fileInput.click();
+            });
+
+            // Handle file selection and import logic
             fileInput.addEventListener('change', () => {
-               importBtn.disabled = !fileInput.files.length;
+               if (!fileInput.files.length) return;
+               const file = fileInput.files[0];
+               const reader = new FileReader();
+               reader.onload = async (e) => {
+                  let data;
+                  try {
+                     data = JSON.parse(e.target.result);
+                  } catch (err) {
+                     importFeedback.textContent = 'Error: Invalid JSON file.';
+                     importFeedback.style.color = '#ff6b6b';
+                     return;
+                  }
+
+                  // Minimal validation
+                  const hasDecks = Array.isArray(data.decks);
+                  const hasQuiz = Array.isArray(data.quizHistory) || Array.isArray(data.quizzes);
+                  const hasMastery = Array.isArray(data.masteryData);
+                  const hasSettings = typeof data.settings === 'object';
+                  if (!hasDecks && !hasQuiz && !hasMastery && !hasSettings) {
+                     importFeedback.textContent = 'Error: File does not contain recognizable flashcard data.';
+                     importFeedback.style.color = '#ff6b6b';
+                     return;
+                  }
+
+                  // Prompt user for merge/overwrite
+                  const choice = window.confirm('Do you want to overwrite your current data with the imported file? Click Cancel to merge instead.');
+
+                  try {
+                     if (choice) {
+                        // Overwrite: replace all relevant data
+                        if (hasDecks) stateMgr.decks = data.decks;
+                        if (hasQuiz) stateMgr.quizHistory = data.quizHistory || data.quizzes;
+                        if (hasMastery) stateMgr.masteryData = data.masteryData;
+                        if (hasSettings) stateMgr.account.settings = data.settings;
+                     } else {
+                        // Merge: append decks, quizzes, mastery, merge settings
+                        if (hasDecks) stateMgr.decks = [...(stateMgr.decks || []), ...data.decks];
+                        if (hasQuiz) stateMgr.quizHistory = [...(stateMgr.quizHistory || []), ...(data.quizHistory || data.quizzes || [])];
+                        if (hasMastery) stateMgr.masteryData = [...(stateMgr.masteryData || []), ...data.masteryData];
+                        if (hasSettings) Object.assign(stateMgr.account.settings, data.settings);
+                     }
+                     importFeedback.textContent = 'Import successful!';
+                     importFeedback.style.color = '#4fc3f7';
+                     // Optionally, trigger a save or refresh here
+                  } catch (err) {
+                     importFeedback.textContent = 'Error importing data.';
+                     importFeedback.style.color = '#ff6b6b';
+                  }
+               };
+               reader.readAsText(file);
             });
 
             // Checkbox rendering and button enable/disable logic
