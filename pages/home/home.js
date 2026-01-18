@@ -14,11 +14,7 @@ page = {
       let splashSection = document.createElement('div')
       splashSection.classList.add('splash-section')
       splashSection.appendChild(this.title)
-      splashSection.appendChild(document.createElement('br'))
-      splashSection.appendChild(document.createElement('br'))
       splashSection.appendChild(this.tagLine)
-      splashSection.appendChild(document.createElement('br'))
-      splashSection.appendChild(document.createElement('br'))
       splashSection.appendChild(this.getStarted)
       
       content.appendChild(splashSection)
@@ -125,6 +121,10 @@ page = {
             'Responsive Design: Works seamlessly on desktop and mobile devices'
          ]
       ))
+
+      const divider = document.createElement('div')
+      divider.classList.add('title-section')
+      section.appendChild(divider)
       
       return section
    },
@@ -160,6 +160,7 @@ page = {
    },
    get title() {
       let ele = document.createElement('div')
+      ele.classList.add('title-section')
 
       let subtitle = document.createElement('h1')
       subtitle.innerText = "Flash Cards"
@@ -174,6 +175,7 @@ page = {
    },
    get tagLine() {
       let ele = document.createElement('h3')
+      ele.classList.add('title-section')
       
       let learn = document.createElement('h1')
       learn.innerHTML = "Learning"
