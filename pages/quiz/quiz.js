@@ -69,10 +69,10 @@ page = {
       }
       
       stateMgr.card = await dbCtx.card.get(id)
-      q.innerText = stateMgr.card.phrase
+      q.innerHTML = stateMgr.card.phrase
       
       // Reset the UI for the new question
-      a.innerText = ''
+      a.innerHTML = ''
       controls.classList.add('invisible')
    },
 
@@ -80,7 +80,7 @@ page = {
       let ele = document.createElement('div')
       ele.id = 'question'
       ele.classList.add('info')
-      ele.innerText = stateMgr.card.phrase
+      ele.innerHTML = stateMgr.card.phrase
       return ele
    },
 
@@ -103,7 +103,7 @@ page = {
    showAnswer() {
       let qp = document.getElementById('controls')
       qp.classList.remove('invisible')
-      document.getElementById('answer').innerText = stateMgr.card.answer
+      document.getElementById('answer').innerHTML = stateMgr.card.answer
    },
    
    get correctBtn() {

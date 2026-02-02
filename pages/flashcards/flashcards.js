@@ -157,28 +157,85 @@ page = {
       sp.placeholder = 'Short Phrase'
       sp.value = stateMgr.card.shortPhrase || ''
 
-      let ph = document.createElement('textarea')
-      ph.id = 'card-phrase'
-      ph.placeholder = 'Enter the full phrasing of the question here.'
-      ph.rows = 5
-      ph.innerText = stateMgr.card.phrase || ''
+      let qWrapper = document.createElement('div')
+      
+      let phContainer = document.createElement('div')
+      phContainer.id = 'card-phrase-container'
+      phContainer.className = 'quill-editor'
 
-      let an = document.createElement('textarea')
-      an.id = 'card-answer'
-      an.placeholder = 'Enter the answer to the question here.'
-      an.innerText = stateMgr.card.answer || ''
+      qWrapper.appendChild(phContainer)
+
+      let aWrapper = document.createElement('div')
+      
+      let anContainer = document.createElement('div')
+      anContainer.id = 'card-answer-container'
+      anContainer.className = 'quill-editor'
+
+      aWrapper.appendChild(anContainer)
 
       let frm = document.createElement('div')
       frm.classList.add('question-form') // Reuse existing form styles
       frm.appendChild(sp)
-      frm.appendChild(ph)
-      frm.appendChild(an)
+      frm.appendChild(qWrapper)
+      frm.appendChild(aWrapper)
       frm.appendChild(this.cardControls)
 
       let ele = document.createElement('div')
       ele.classList.add('question-modal') // Reuse existing modal styles
       ele.appendChild(frm)
+      
+      // Initialize Quill editors after elements are added to DOM
+      setTimeout(() => {
+         this.initializeQuillEditors()
+      }, 0)
+      
       return ele
+   },
+
+   initializeQuillEditors() {
+      // Initialize phrase editor
+      const phraseEditor = new Quill('#card-phrase-container', {
+         theme: 'snow',
+         placeholder: 'Enter the full phrasing of the question here.',
+         modules: {
+            toolbar: [
+               ['bold', 'italic', 'underline'],
+               ['blockquote', 'code-block'],
+               [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+               [{ 'script': 'sub'}, { 'script': 'super' }],
+               // [{ 'header': [1, 2, 3, 4, false] }],
+               ['clean']
+            ]
+         }
+      })
+      
+      // Initialize answer editor
+      const answerEditor = new Quill('#card-answer-container', {
+         theme: 'snow',
+         placeholder: 'Enter the answer to the question here.',
+         modules: {
+            toolbar: [
+               ['bold', 'italic', 'underline'],
+               ['blockquote', 'code-block'],
+               [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+               [{ 'script': 'sub'}, { 'script': 'super' }],
+               [{ 'header': [1, 2, 3, 4, false] }],
+               ['clean']
+            ]
+         }
+      })
+      
+      // Store references for later access
+      window.quillPhrase = phraseEditor
+      window.quillAnswer = answerEditor
+      
+      // Set initial content
+      if (stateMgr.card.phrase) {
+         phraseEditor.root.innerHTML = stateMgr.card.phrase
+      }
+      if (stateMgr.card.answer) {
+         answerEditor.root.innerHTML = stateMgr.card.answer
+      }
    },
 
    async populateExistingDecks(selectElement) {
@@ -362,12 +419,11 @@ page = {
 
    async saveCard() {
       let shortPhraseInput = document.getElementById('card-short-phrase')
-      let phraseInput = document.getElementById('card-phrase')
-      let answerInput = document.getElementById('card-answer')
       
       let shortPhrase = shortPhraseInput?.value.trim()
-      let phrase = phraseInput?.value.trim()
-      let answer = answerInput?.value.trim()
+      // Get HTML content from Quill editors
+      let phrase = window.quillPhrase?.root.innerHTML || ''
+      let answer = window.quillAnswer?.root.innerHTML || ''
 
       if (!shortPhrase) {
          shortPhraseInput.focus()
@@ -397,6 +453,10 @@ page = {
       this.refreshTabs()
       document.getElementById('site-header').classList.remove('blur')
       app.hideModal()
+      
+      // Clean up Quill editor references
+      window.quillPhrase = null
+      window.quillAnswer = null
    },
 
    showDeleteDeckConfirm(deck) {
