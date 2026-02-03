@@ -203,7 +203,6 @@ page = {
                ['blockquote', 'code-block'],
                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                [{ 'script': 'sub'}, { 'script': 'super' }],
-               // [{ 'header': [1, 2, 3, 4, false] }],
                ['clean']
             ]
          }
